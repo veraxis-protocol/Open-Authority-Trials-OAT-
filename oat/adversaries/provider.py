@@ -36,6 +36,11 @@ class Transport(ABC):
     is_live: bool = False
     name: str = "abstract"
 
+    @property
+    def provider_run_occurred(self) -> bool:
+        """True only after live response evidence has actually been recorded."""
+        return False
+
     @abstractmethod
     def complete(self, prompt: str) -> str:
         """Return the provider's response to ``prompt``."""
@@ -98,7 +103,7 @@ class ProviderAdversary(Adversary):
     @property
     def provider_run_occurred(self) -> bool:
         """Whether a real provider endpoint was contacted. Derived, not declared."""
-        return bool(self.transport.is_live)
+        return bool(self.transport.provider_run_occurred)
 
     def identity(self) -> dict[str, Any]:
         identity = super().identity()

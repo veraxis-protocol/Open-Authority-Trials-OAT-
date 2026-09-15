@@ -46,7 +46,7 @@ def flowed(text: str) -> str:
 def tracked_text_files(root: Path) -> list[Path]:
     files: list[Path] = []
     for path in sorted(root.rglob("*")):
-        if not path.is_file() or ".git" in path.parts:
+        if not path.is_file() or any(part in {".git", ".venv"} for part in path.parts):
             continue
         if path.suffix in TEXT_SUFFIXES or path.name in EXTENSIONLESS:
             files.append(path)
