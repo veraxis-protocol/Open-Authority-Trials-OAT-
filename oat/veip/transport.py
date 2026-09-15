@@ -8,6 +8,7 @@ import os
 import time
 import urllib.error
 import urllib.request
+from collections.abc import Callable
 from dataclasses import dataclass, replace
 from enum import Enum
 from typing import Any
@@ -185,12 +186,14 @@ class NvidiaSSETransport(Transport):
         api_key_env: str = "NVIDIA_API_KEY",
         timeout: int = 120,
         capture_raw_response: bool = False,
+        before_provider_call: Callable[[], None] | None = None,
     ) -> None:
         self.api_key_env = api_key_env
         self.timeout = timeout
         #: Development-only raw-byte capture. Off by default, and raw provider
         #: bytes are never part of normal claim-bearing evidence.
         self.capture_raw_response = capture_raw_response
+        self.before_provider_call = before_provider_call
         self.last_evidence: TransportEvidence | None = None
         self.transport_failures: list[TransportFailureEvidence] = []
 
@@ -261,6 +264,9 @@ class NvidiaSSETransport(Transport):
                 "Accept": "text/event-stream",
             },
         )
+        if self.before_provider_call is not None:
+            self.before_provider_call()
+
         try:
             with urllib.request.urlopen(request, timeout=self.timeout) as response:
                 raw = response.read()
