@@ -155,3 +155,11 @@ def test_main_defaults_to_stdout(tmp_path: Path, capsys: pytest.CaptureFixture[s
     code = main(["run", str(scenario_path("CONTROL"))])
     assert code == 0
     assert "STATUS = METHOD_DEVELOPMENT_ONLY" in capsys.readouterr().out
+
+
+def test_dryrun_command_reports_every_check(tmp_path: Path) -> None:
+    code, text = run_cli("dryrun", "--out", str(tmp_path / "dry"))
+    assert code == 0
+    assert "dry run ok        = True" in text
+    assert "provider run      = False" in text
+    assert "[PASS] false_assertion_refused" in text

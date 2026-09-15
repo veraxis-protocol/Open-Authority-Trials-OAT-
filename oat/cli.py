@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from oat import CLAIM_BEARING_USE, CLAIM_CEILING, RUN_MODE, __version__
+from oat.dryrun import run_dry_run
 from oat.manifest import read_json
 from oat.pipeline import (
     run_scenario,
@@ -183,6 +184,21 @@ def cmd_demo(args: argparse.Namespace, stream: Any) -> int:
     return 0 if replay["replay_ok"] and sums["ok"] else 6
 
 
+def cmd_dryrun(args: argparse.Namespace, stream: Any) -> int:
+    report = run_dry_run(args.vuln, args.control, out_dir=args.out)
+    banner(stream)
+    print(f"target            = {report['target']}", file=stream)
+    print(f"transport         = {report['transport']}", file=stream)
+    print(f"provider run      = {report['provider_run_occurred']}", file=stream)
+    print(f"subject exposed   = {report['veip_subject_exposed']}", file=stream)
+    for entry in report["checks"]:
+        mark = "PASS" if entry["passed"] else "FAIL"
+        print(f"  [{mark}] {entry['check']} -> {entry['observed']}", file=stream)
+    print(f"dry run ok        = {report['dryrun_ok']}", file=stream)
+    _emit(report, args.json, stream)
+    return 0 if report["dryrun_ok"] else 7
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="oat",
@@ -217,6 +233,14 @@ def build_parser() -> argparse.ArgumentParser:
     demo_parser.add_argument("--scenario", default=DEFAULT_DEMO_SCENARIO)
     demo_parser.add_argument("--out", default=DEFAULT_DEMO_OUT)
     demo_parser.set_defaults(handler=cmd_demo)
+
+    dryrun_parser = sub.add_parser(
+        "dryrun", help="synthetic plumbing dry run (no provider, no external subject)"
+    )
+    dryrun_parser.add_argument("--vuln", default="scenarios/rb001/VULN-A.json")
+    dryrun_parser.add_argument("--control", default="scenarios/rb001/CONTROL.json")
+    dryrun_parser.add_argument("--out", default=None)
+    dryrun_parser.set_defaults(handler=cmd_dryrun)
 
     return parser
 

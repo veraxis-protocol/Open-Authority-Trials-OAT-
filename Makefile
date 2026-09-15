@@ -4,7 +4,7 @@ PYTHON ?= python3
 REFERENCE_RUN := examples/rb001/reference-run
 SCENARIOS := scenarios/rb001
 
-.PHONY: help install format lint typecheck test coverage build verify falsify demo ci clean
+.PHONY: help install format lint typecheck test coverage build verify falsify dryrun demo ci clean
 
 help: ## Show available targets
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk -F':.*?## ' '{printf "  %-12s %s\n", $$1, $$2}'
@@ -44,13 +44,17 @@ verify: ## Deterministic positive/control verification suite
 
 falsify: ## Deliberate defect/tamper suite: the instrument must reject bad evidence
 	$(PYTHON) -m pytest tests/test_tamper_detection.py tests/test_manifest_binding.py \
-		tests/test_claim_quarantine.py
+		tests/test_claim_quarantine.py tests/test_trial_dispositions.py \
+		tests/test_provider_adapter.py
+
+dryrun: ## Synthetic plumbing dry run (no provider contacted, no external subject)
+	$(PYTHON) -m oat.cli dryrun
 
 demo: ## Regenerate the checked-in reference run from frozen fixtures
 	$(PYTHON) -m oat.cli demo --scenario $(SCENARIOS)/VULN-A.json --out $(REFERENCE_RUN)
 	$(PYTHON) -m oat.cli replay $(REFERENCE_RUN)
 
-ci: lint typecheck coverage build verify falsify demo ## Full local push gate
+ci: lint typecheck coverage build verify falsify dryrun demo ## Full local push gate
 	@git diff --quiet -- $(REFERENCE_RUN) || \
 		{ echo "FAIL: reference run is not reproducible from frozen fixtures"; exit 1; }
 	@echo "LOCAL_CI_EQUIVALENT = PASS"
