@@ -1,0 +1,71 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "open-authority-trials"
+version = "0.1.0"
+description = "Open Authority Trials: adversarial evidence instrument for machine-authority boundaries (method-development only)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Veraxis Protocol" }]
+keywords = ["authority", "adversarial", "evidence", "toctou", "revocation"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+]
+dependencies = ["jsonschema>=4.0"]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.4",
+  "pytest-cov>=4.1",
+  "ruff>=0.5",
+  "mypy>=1.8",
+  "build>=1.0",
+  "jsonschema>=4.0",
+  "types-jsonschema>=4.0",
+]
+
+[project.scripts]
+oat = "oat.cli:main"
+
+[tool.setuptools]
+packages = [
+  "oat",
+  "oat.adversaries",
+  "oat.falsifiers",
+  "oat.reference_boundaries",
+  "oat.verifier",
+  "oat.schemas",
+]
+
+[tool.setuptools.package-dir]
+"oat.schemas" = "schemas"
+
+[tool.setuptools.package-data]
+oat = ["py.typed"]
+"oat.schemas" = ["*.json"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_unused_configs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.coverage.run]
+branch = true
+source = ["oat"]

@@ -1,0 +1,19 @@
+{
+  "adversary_used": false,
+  "canonical_result_digest": "sha256:b6be66ace8a358e5f6bf4a3a279e0aa4a540906e38c812c3c88346074ca0b277",
+  "claim_bearing_use": "PROHIBITED",
+  "disposition": "COUNTEREXAMPLE_CONFIRMED",
+  "disposition_match": true,
+  "evidence_digest_match": true,
+  "recomputed_evidence_digest": "sha256:ac2e7b4eabefa4cb4c455fa0b7a96227b44ada89c34883dc35663b30bee89cca",
+  "recomputed_trace_digest": "sha256:a4bf3274034569234bdb4751eed1f9952a7a404c64770fddbc01089e2d7b77d6",
+  "recorded_disposition": "COUNTEREXAMPLE_CONFIRMED",
+  "recorded_evidence_digest": "sha256:ac2e7b4eabefa4cb4c455fa0b7a96227b44ada89c34883dc35663b30bee89cca",
+  "recorded_trace_digest": "sha256:a4bf3274034569234bdb4751eed1f9952a7a404c64770fddbc01089e2d7b77d6",
+  "replay_form": "oat-replay-result/1",
+  "replay_ok": true,
+  "run_mode": "METHOD_DEVELOPMENT_ONLY",
+  "scenario_id": "RB-001-VULN-A",
+  "trace_match": true,
+  "witness_match": true
+}

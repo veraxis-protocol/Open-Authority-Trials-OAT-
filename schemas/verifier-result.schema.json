@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://veraxis.io/oat/schemas/verifier-result/1",
+  "title": "OAT verifier result",
+  "description": "Output of V1. The computational result is derived only by recomputation; no narrative may alter it.",
+  "type": "object",
+  "required": ["result_form", "run_mode", "claim_bearing_use", "claim_ceiling", "scenario_id", "boundary_id", "manifest_digest", "witness_digest", "falsifier", "verifier", "disposition", "predicate_trace", "computational_result", "evidence_digest"],
+  "properties": {
+    "result_form": { "const": "oat-verifier-result/1" },
+    "canonical_form": { "const": "oat-canonical-json/1" },
+    "run_mode": { "const": "METHOD_DEVELOPMENT_ONLY" },
+    "claim_bearing_use": { "const": "PROHIBITED" },
+    "claim_ceiling": { "type": "string", "minLength": 1 },
+    "scenario_id": { "type": "string" },
+    "boundary_id": { "type": "string" },
+    "manifest_digest": { "type": "string" },
+    "witness_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "falsifier": { "type": "object" },
+    "verifier": { "type": "object", "required": ["id", "version"] },
+    "disposition": { "type": "string", "enum": ["COUNTEREXAMPLE_CONFIRMED", "NO_COUNTEREXAMPLE", "REJECTED"] },
+    "rejection_reason": { "type": ["string", "null"] },
+    "predicate_trace": { "type": "array" },
+    "computational_result": { "type": ["boolean", "null"] },
+    "detail": { "type": "array", "items": { "type": "string" } },
+    "evidence_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "runtime": { "type": "object" }
+  }
+}

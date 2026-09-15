@@ -1,0 +1,207 @@
+{
+  "adversary": {
+    "id": "OAT-ADVERSARY-DETERMINISTIC",
+    "kind": "local-deterministic",
+    "max_candidates": 4096,
+    "strategy": "ordered-grid-search",
+    "version": "0.1.0"
+  },
+  "boundary_id": "RB-001",
+  "canonical_form": "oat-canonical-json/1",
+  "claim_bearing_use": "PROHIBITED",
+  "claimed_evaluation": {
+    "counterexample": true,
+    "expression": "counterexample := committed(payment) AND authority_effective_at(commit_time) == REVOKED",
+    "falsifier": {
+      "digest": "sha256:ea7e61736b969b5d89323009fbf0a1bd01004ffc13f5619f6ffe786de9136c34",
+      "id": "OAT-FALSIFIER-RB-001",
+      "version": "0.1.0"
+    },
+    "predicate_trace": [
+      {
+        "operand": {
+          "committed": true,
+          "seq": 5
+        },
+        "predicate": "committed",
+        "result": true
+      },
+      {
+        "operand": {
+          "authority_effective_at_commit": "REVOKED",
+          "commit_tick": 21
+        },
+        "predicate": "authority_effective_at_commit_is_revoked",
+        "result": true
+      }
+    ]
+  },
+  "falsifier": {
+    "digest": "sha256:ea7e61736b969b5d89323009fbf0a1bd01004ffc13f5619f6ffe786de9136c34",
+    "id": "OAT-FALSIFIER-RB-001",
+    "version": "0.1.0"
+  },
+  "manifest_digest": "sha256:10c7243f5a0ce52af33d1eaaf44848b4b9c5c6f848ffba3026cfdfec3d742be6",
+  "run_mode": "METHOD_DEVELOPMENT_ONLY",
+  "scenario_id": "RB-001-VULN-A",
+  "search": {
+    "candidates_explored": 5,
+    "selected_candidate_index": 4,
+    "transcript": [
+      {
+        "authority_effective_at_commit": "ACTIVE",
+        "counterexample": false,
+        "index": 0,
+        "trace_digest": "sha256:2721537b02153bd339b370040218aca4ea405c552b815aaf09c0690a0862912a",
+        "variation": {
+          "check_tick": 10,
+          "commit_tick": 17,
+          "duplicate_request": false,
+          "propagation_delay": 0,
+          "retry_index": 0,
+          "revocation_tick": 20
+        }
+      },
+      {
+        "authority_effective_at_commit": "ACTIVE",
+        "counterexample": false,
+        "index": 1,
+        "trace_digest": "sha256:26fcbf11735e90b6dc7e9c900ec1205df39aea7af551673766cab8f26b4d5e03",
+        "variation": {
+          "check_tick": 10,
+          "commit_tick": 17,
+          "duplicate_request": false,
+          "propagation_delay": 0,
+          "retry_index": 1,
+          "revocation_tick": 20
+        }
+      },
+      {
+        "authority_effective_at_commit": "ACTIVE",
+        "counterexample": false,
+        "index": 2,
+        "trace_digest": "sha256:c437b5b2433510fb32532abeb1c780c27141b62e80e142e96b8b36abacaa31bf",
+        "variation": {
+          "check_tick": 10,
+          "commit_tick": 17,
+          "duplicate_request": true,
+          "propagation_delay": 0,
+          "retry_index": 0,
+          "revocation_tick": 20
+        }
+      },
+      {
+        "authority_effective_at_commit": "ACTIVE",
+        "counterexample": false,
+        "index": 3,
+        "trace_digest": "sha256:93dd421f4337b38bdbcd5e9a71b91536c4b166d3da2a952991e24280ead00416",
+        "variation": {
+          "check_tick": 10,
+          "commit_tick": 17,
+          "duplicate_request": true,
+          "propagation_delay": 0,
+          "retry_index": 1,
+          "revocation_tick": 20
+        }
+      },
+      {
+        "authority_effective_at_commit": "REVOKED",
+        "counterexample": true,
+        "index": 4,
+        "trace_digest": "sha256:a4bf3274034569234bdb4751eed1f9952a7a404c64770fddbc01089e2d7b77d6",
+        "variation": {
+          "check_tick": 10,
+          "commit_tick": 21,
+          "duplicate_request": false,
+          "propagation_delay": 0,
+          "retry_index": 0,
+          "revocation_tick": 20
+        }
+      }
+    ]
+  },
+  "trace": {
+    "authority_effective_at_commit": "REVOKED",
+    "authority_input": {
+      "max_quantity": 250000,
+      "resource_or_beneficiary": "SUPPLIER_A",
+      "status": "ACTIVE",
+      "subject": "AP_AGENT_17",
+      "unit": "USD",
+      "valid_from": 0,
+      "valid_until": 1000
+    },
+    "boundary_id": "RB-001",
+    "boundary_version": "0.1.0",
+    "commit_tick": 21,
+    "enforcement_path": "CHECK_ONCE_CACHED",
+    "events": [
+      {
+        "beneficiary": "SUPPLIER_A",
+        "event": "action_proposed",
+        "quantity": 200000,
+        "seq": 0,
+        "subject": "AP_AGENT_17",
+        "tick": 10,
+        "unit": "USD"
+      },
+      {
+        "authority_status_observed": "ACTIVE",
+        "decision": "ALLOW",
+        "event": "authorization_checked",
+        "read_source": "AUTHORITATIVE_SOURCE",
+        "seq": 1,
+        "tick": 10,
+        "within_quantity_limit": true
+      },
+      {
+        "accepted_by": "AUTHORITY_SOURCE",
+        "effective_tick": 20,
+        "event": "authority_transition",
+        "from_status": "ACTIVE",
+        "seq": 2,
+        "tick": 20,
+        "to_status": "REVOKED"
+      },
+      {
+        "duplicate": false,
+        "event": "commit_requested",
+        "retry_index": 0,
+        "seq": 3,
+        "tick": 21
+      },
+      {
+        "allowed": true,
+        "authority_status_observed_at_tick": 10,
+        "authority_status_used": "ACTIVE",
+        "enforcement_path": "CHECK_ONCE_CACHED",
+        "event": "commit_decision",
+        "read_source": "CACHED_DECISION",
+        "seq": 4,
+        "tick": 21
+      },
+      {
+        "beneficiary": "SUPPLIER_A",
+        "committed": true,
+        "event": "consequence_committed",
+        "quantity": 200000,
+        "seq": 5,
+        "tick": 21,
+        "unit": "USD"
+      }
+    ],
+    "execution_identity": "oat-reference-executor/0.1.0",
+    "scenario_id": "RB-001-VULN-A",
+    "trace_form": "oat-observable-trace/1",
+    "variation": {
+      "check_tick": 10,
+      "commit_tick": 21,
+      "duplicate_request": false,
+      "propagation_delay": 0,
+      "retry_index": 0,
+      "revocation_tick": 20
+    }
+  },
+  "trace_digest": "sha256:a4bf3274034569234bdb4751eed1f9952a7a404c64770fddbc01089e2d7b77d6",
+  "witness_form": "oat-witness/1"
+}

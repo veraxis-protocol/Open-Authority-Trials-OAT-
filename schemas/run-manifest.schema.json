@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://veraxis.io/oat/schemas/run-manifest/1",
+  "title": "OAT run manifest",
+  "description": "Per-run binding record. Everything outside the runtime subtree is inside the evidence digest domain.",
+  "type": "object",
+  "required": ["manifest_form", "canonical_form", "run_mode", "claim_bearing_use", "claim_ceiling", "boundary", "target", "formalism", "scenario", "scenario_manifest_digest", "authority_digest", "falsifier", "adversary", "verifier"],
+  "properties": {
+    "manifest_form": { "const": "oat-run-manifest/1" },
+    "canonical_form": { "const": "oat-canonical-json/1" },
+    "run_mode": { "const": "METHOD_DEVELOPMENT_ONLY" },
+    "claim_bearing_use": { "const": "PROHIBITED" },
+    "claim_ceiling": { "type": "string", "minLength": 1 },
+    "boundary": {
+      "type": "object",
+      "required": ["id", "version"],
+      "properties": { "id": { "type": "string" }, "version": { "type": "string" } }
+    },
+    "scenario": {
+      "type": "object",
+      "required": ["id", "name", "digest", "enforcement_path"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "enforcement_path": { "type": "string" }
+      }
+    },
+    "target": {
+      "type": "object",
+      "description": "Frozen identity of the reference-boundary code under test.",
+      "required": ["boundary_id", "boundary_version", "module", "code_digest"],
+      "properties": {
+        "boundary_id": { "type": "string" },
+        "boundary_version": { "type": "string" },
+        "module": { "type": "string" },
+        "code_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+      }
+    },
+    "formalism": {
+      "type": "object",
+      "required": ["name", "version", "canonicalization", "witness_schema", "falsifier"],
+      "properties": {
+        "name": { "type": "string" },
+        "version": { "type": "string" },
+        "canonicalization": { "const": "oat-canonical-json/1" },
+        "semantics": { "type": "string" },
+        "witness_schema": { "type": "object", "required": ["id", "digest"] },
+        "falsifier": { "type": "object", "required": ["id", "version", "digest"] },
+        "protocol_adapter": { "type": ["object", "null"] },
+        "protocol_adapter_absent_reason": { "type": "string" }
+      }
+    },
+    "scenario_manifest_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "authority_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "falsifier": { "type": "object", "required": ["id", "version", "digest"] },
+    "adversary": { "type": "object", "required": ["id", "version", "kind"] },
+    "verifier": { "type": "object", "required": ["id", "version"] },
+    "runtime": {
+      "type": "object",
+      "description": "Non-canonical runtime metadata. Excluded from every digest."
+    }
+  }
+}

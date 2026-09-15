@@ -1,0 +1,28 @@
+{
+  "scenario_form": "oat-scenario/1",
+  "schema_version": "1.0.0",
+  "scenario_id": "RB-001-CONTROL",
+  "boundary_id": "RB-001",
+  "manifest_ref": "manifest.json",
+  "authority_ref": "authority.json",
+  "enforcement_path": "RECHECK_AT_COMMIT",
+  "expected_disposition": "NO_COUNTEREXAMPLE_EXPECTED",
+  "action_quantity": 200000,
+  "execution_identity": "oat-reference-executor/0.1.0",
+  "run_mode": "METHOD_DEVELOPMENT_ONLY",
+  "claim_bearing_use": "PROHIBITED",
+  "baseline": {
+    "check_tick": 10,
+    "revocation_tick": 20,
+    "commit_tick": 21,
+    "propagation_delay": 0
+  },
+  "search_space": {
+    "check_tick": [5, 10, 15],
+    "revocation_tick": [20],
+    "commit_offset": [-3, 1, 5, 12],
+    "propagation_delay": [0],
+    "retry_index": [0, 1],
+    "duplicate_request": [false, true]
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "adversary": {
+    "id": "OAT-ADVERSARY-DETERMINISTIC",
+    "kind": "local-deterministic",
+    "max_candidates": 4096,
+    "strategy": "ordered-grid-search",
+    "version": "0.1.0"
+  },
+  "authority_digest": "sha256:c0e4036ae7eae8039d9fe6d8520ed6b13e2dd65dbf6350f9cfee2bb8eefbdcce",
+  "boundary": {
+    "id": "RB-001",
+    "version": "0.1.0"
+  },
+  "canonical_form": "oat-canonical-json/1",
+  "claim_bearing_use": "PROHIBITED",
+  "claim_ceiling": "A deterministic local instrument reproduced a documented synthetic authorization failure class (RB-001) under frozen scenario conditions. This supports no claim about VEIP, OAuth, any agent system, any vendor, or any deployed system.",
+  "falsifier": {
+    "digest": "sha256:ea7e61736b969b5d89323009fbf0a1bd01004ffc13f5619f6ffe786de9136c34",
+    "id": "OAT-FALSIFIER-RB-001",
+    "version": "0.1.0"
+  },
+  "formalism": {
+    "canonicalization": "oat-canonical-json/1",
+    "falsifier": {
+      "digest": "sha256:ea7e61736b969b5d89323009fbf0a1bd01004ffc13f5619f6ffe786de9136c34",
+      "id": "OAT-FALSIFIER-RB-001",
+      "version": "0.1.0"
+    },
+    "name": "oat-rb001-observable",
+    "protocol_adapter": null,
+    "protocol_adapter_absent_reason": "RB-001 is synthetic and protocol-free",
+    "semantics": "observable-first; logical ticks; ground-truth authority state",
+    "version": "0.1.0",
+    "witness_schema": {
+      "digest": "sha256:8096714c87205bea0be79320e1ff9ba9789bf591ec3bf8b725039bc2663342e8",
+      "id": "https://veraxis.io/oat/schemas/witness/1"
+    }
+  },
+  "manifest_form": "oat-run-manifest/1",
+  "run_mode": "METHOD_DEVELOPMENT_ONLY",
+  "scenario": {
+    "digest": "sha256:1d31227d3031bb99a3b4c2f3cf94269834b0972c37a890c33df9a021685a091e",
+    "enforcement_path": "CHECK_ONCE_CACHED",
+    "id": "RB-001-VULN-A",
+    "name": "VULN-A.json"
+  },
+  "scenario_manifest_digest": "sha256:75ef0921bff1cb3cefb315a52a97f999f928c9411f6ca82ee900235b267ca1ae",
+  "target": {
+    "boundary_id": "RB-001",
+    "boundary_version": "0.1.0",
+    "code_digest": "sha256:4b356bc6a3ad42cdaa474182e92ec079e7a4b7dea5c20242a731178acac221ea",
+    "module": "oat.reference_boundaries.rb001"
+  },
+  "verifier": {
+    "id": "OAT-V1",
+    "version": "0.1.0"
+  }
+}

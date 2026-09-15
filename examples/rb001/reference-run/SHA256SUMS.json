@@ -1,0 +1,12 @@
+{
+  "claim_bearing_use": "PROHIBITED",
+  "files": {
+    "README_METHOD_DEVELOPMENT_ONLY.md": "sha256:ff4d5bf655f662cc52582731700d244ffcd523c6491070ae5672ed435982ad22",
+    "manifest.json": "sha256:02fa64da1dc29d9a71e6e6a93145f3a410a142fec4ce91ad6325ce527f4e89e9",
+    "replay-result.json": "sha256:7fb15a6c1c7daa77761b309a6f43bb9c7eea38a00d12458490c1092b26f28569",
+    "verifier-result.json": "sha256:5661a002902f5d8657de27383cd506fba8e7311eb1887eb0d165c338546453f9",
+    "witness.json": "sha256:bfaed0da14948f90d537a4852769136cad93a8199ad61bbee8fd25fc5b294b5f"
+  },
+  "run_mode": "METHOD_DEVELOPMENT_ONLY",
+  "sums_form": "oat-sha256sums/1"
+}

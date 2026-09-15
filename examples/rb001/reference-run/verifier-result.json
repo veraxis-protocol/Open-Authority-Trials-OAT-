@@ -1,0 +1,43 @@
+{
+  "boundary_id": "RB-001",
+  "canonical_form": "oat-canonical-json/1",
+  "claim_bearing_use": "PROHIBITED",
+  "claim_ceiling": "A deterministic local instrument reproduced a documented synthetic authorization failure class (RB-001) under frozen scenario conditions. This supports no claim about VEIP, OAuth, any agent system, any vendor, or any deployed system.",
+  "computational_result": true,
+  "detail": [],
+  "disposition": "COUNTEREXAMPLE_CONFIRMED",
+  "evidence_digest": "sha256:ac2e7b4eabefa4cb4c455fa0b7a96227b44ada89c34883dc35663b30bee89cca",
+  "falsifier": {
+    "digest": "sha256:ea7e61736b969b5d89323009fbf0a1bd01004ffc13f5619f6ffe786de9136c34",
+    "id": "OAT-FALSIFIER-RB-001",
+    "version": "0.1.0"
+  },
+  "manifest_digest": "sha256:10c7243f5a0ce52af33d1eaaf44848b4b9c5c6f848ffba3026cfdfec3d742be6",
+  "predicate_trace": [
+    {
+      "operand": {
+        "committed": true,
+        "seq": 5
+      },
+      "predicate": "committed",
+      "result": true
+    },
+    {
+      "operand": {
+        "authority_effective_at_commit": "REVOKED",
+        "commit_tick": 21
+      },
+      "predicate": "authority_effective_at_commit_is_revoked",
+      "result": true
+    }
+  ],
+  "rejection_reason": null,
+  "result_form": "oat-verifier-result/1",
+  "run_mode": "METHOD_DEVELOPMENT_ONLY",
+  "scenario_id": "RB-001-VULN-A",
+  "verifier": {
+    "id": "OAT-V1",
+    "version": "0.1.0"
+  },
+  "witness_digest": "sha256:1f3d6a4462c87a014652f8ef74642cd1d82eeab1661a31f184158962cd22bd5e"
+}

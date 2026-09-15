@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://veraxis.io/oat/schemas/observable-trace/1",
+  "title": "OAT observable trace",
+  "description": "Observable-first record of one scenario execution. Contains only what was observed of the system under test.",
+  "type": "object",
+  "required": ["trace_form", "boundary_id", "scenario_id", "execution_identity", "enforcement_path", "authority_input", "variation", "commit_tick", "authority_effective_at_commit", "events"],
+  "properties": {
+    "trace_form": { "const": "oat-observable-trace/1" },
+    "boundary_id": { "type": "string", "minLength": 1 },
+    "boundary_version": { "type": "string" },
+    "scenario_id": { "type": "string", "minLength": 1 },
+    "execution_identity": { "type": "string", "minLength": 1 },
+    "enforcement_path": { "type": "string", "enum": ["CHECK_ONCE_CACHED", "STALE_PROPAGATION", "RECHECK_AT_COMMIT"] },
+    "authority_input": { "$ref": "https://veraxis.io/oat/schemas/authority-input/1" },
+    "variation": {
+      "type": "object",
+      "required": ["check_tick", "revocation_tick", "commit_tick", "propagation_delay", "retry_index", "duplicate_request"],
+      "properties": {
+        "check_tick": { "type": "integer" },
+        "revocation_tick": { "type": "integer" },
+        "commit_tick": { "type": "integer" },
+        "propagation_delay": { "type": "integer", "minimum": 0 },
+        "retry_index": { "type": "integer", "minimum": 0 },
+        "duplicate_request": { "type": "boolean" }
+      }
+    },
+    "commit_tick": { "type": "integer" },
+    "authority_effective_at_commit": { "type": "string", "enum": ["ACTIVE", "REVOKED"] },
+    "events": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["seq", "tick", "event"],
+        "properties": {
+          "seq": { "type": "integer", "minimum": 0 },
+          "tick": { "type": "integer" },
+          "event": {
+            "type": "string",
+            "enum": ["action_proposed", "authorization_checked", "authority_transition", "commit_requested", "commit_decision", "consequence_committed"]
+          }
+        }
+      }
+    }
+  }
+}

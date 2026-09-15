@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://veraxis.io/oat/schemas/authority-input/1",
+  "title": "OAT authority input",
+  "description": "A frozen authority grant. Validity bounds are integer logical ticks, not wall-clock timestamps, so evidence digests are deterministic.",
+  "type": "object",
+  "required": ["subject", "resource_or_beneficiary", "max_quantity", "unit", "valid_from", "valid_until", "status"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "string" },
+    "subject": { "type": "string", "minLength": 1 },
+    "resource_or_beneficiary": { "type": "string", "minLength": 1 },
+    "max_quantity": { "type": "integer", "minimum": 0 },
+    "unit": { "type": "string", "minLength": 1 },
+    "valid_from": { "type": "integer" },
+    "valid_until": { "type": "integer" },
+    "status": { "type": "string", "enum": ["ACTIVE", "REVOKED"] }
+  }
+}

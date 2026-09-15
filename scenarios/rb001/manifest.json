@@ -1,0 +1,17 @@
+{
+  "manifest_form": "oat-scenario-manifest/1",
+  "schema_version": "1.0.0",
+  "family": "rb001",
+  "boundary_id": "RB-001",
+  "boundary_version": "0.1.0",
+  "title": "Revocation-before-commit / TOCTOU authorization failure",
+  "run_mode": "METHOD_DEVELOPMENT_ONLY",
+  "claim_bearing_use": "PROHIBITED",
+  "falsifier": {
+    "id": "OAT-FALSIFIER-RB-001",
+    "version": "0.1.0"
+  },
+  "authority_ref": "authority.json",
+  "scenarios": ["VULN-A.json", "VULN-B.json", "CONTROL.json"],
+  "notes": "Synthetic reference boundary. Frozen for method development. Not a model of any real system."
+}
