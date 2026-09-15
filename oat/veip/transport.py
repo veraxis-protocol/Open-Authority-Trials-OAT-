@@ -26,6 +26,8 @@ class TransportClass(str, Enum):
     HTTP_429_RETRYABLE = "HTTP_429_RETRYABLE"
     HTTP_4XX_FATAL_FOR_ANGLE = "HTTP_4XX_FATAL_FOR_ANGLE"
     HTTP_5XX_TRANSPORT_FAILURE = "HTTP_5XX_TRANSPORT_FAILURE"
+    PROVIDER_SSE_RETRYABLE_ERROR = "PROVIDER_SSE_RETRYABLE_ERROR"
+    PROVIDER_SSE_FATAL_ERROR = "PROVIDER_SSE_FATAL_ERROR"
     CONNECT_FAILURE = "CONNECT_FAILURE"
     TIMEOUT = "TIMEOUT"
     STREAM_INCOMPLETE = "STREAM_INCOMPLETE"
@@ -85,6 +87,8 @@ class TransportFailureEvidence:
     elapsed_ms: int
     provider_run_occurred: bool
     retry_ordinal: int | None = None
+    provider_error_code: int | None = None
+    provider_error_type: str | None = None
     #: Development-only. ``None`` unless raw capture was explicitly enabled.
     raw_response: bytes | None = None
 
@@ -101,6 +105,10 @@ class TransportFailureEvidence:
             "provider_run_occurred": self.provider_run_occurred,
             "retry_ordinal": self.retry_ordinal,
         }
+        if self.provider_error_code is not None:
+            record["provider_error_code"] = self.provider_error_code
+        if self.provider_error_type is not None:
+            record["provider_error_type"] = self.provider_error_type
         if self.raw_response is not None:
             record["raw_response_development_only"] = self.raw_response.decode("utf-8", "replace")
         return record
@@ -108,12 +116,10 @@ class TransportFailureEvidence:
 
 #: Transport-level conditions the bounded retry schedule may repeat.
 #:
-#: ``MALFORMED_SSE`` is a member as of v1.2.1. That does not make a malformed
-#: stream acceptable - :func:`reconstruct_sse` still rejects it, and it is
-#: never converted into success, empty content, model output, negative
-#: evidence, an UNEVALUABLE witness, or a consumed adversarial attempt. It is
-#: a transport failure, so the whole provider call may be repeated under the
-#: same bounded policy that already covers the other five.
+#: ``MALFORMED_SSE`` remains retryable from v1.2.1. A syntactically valid
+#: provider error carried inside an HTTP-200 SSE stream is classified
+#: separately: embedded 429/5xx errors may retry, while all other embedded
+#: provider errors fail closed without becoming model output.
 RETRYABLE_TRANSPORT_CLASSES = frozenset(
     {
         TransportClass.HTTP_429_RETRYABLE.value,
@@ -124,6 +130,25 @@ RETRYABLE_TRANSPORT_CLASSES = frozenset(
         TransportClass.MALFORMED_SSE.value,
     }
 )
+
+PROVIDER_SSE_RETRYABLE_CLASSES = frozenset({TransportClass.PROVIDER_SSE_RETRYABLE_ERROR.value})
+
+
+def _is_retryable(classification: TransportClass) -> bool:
+    return (
+        classification.value in RETRYABLE_TRANSPORT_CLASSES
+        or classification.value in PROVIDER_SSE_RETRYABLE_CLASSES
+    )
+
+
+@dataclass(frozen=True)
+class _ProviderSSEError:
+    code: int | None
+    error_type: str | None
+
+    @property
+    def retryable(self) -> bool:
+        return self.code == 429 or (self.code is not None and 500 <= self.code < 600)
 
 
 def _allowed_headers(headers: Any) -> dict[str, str]:
@@ -145,19 +170,79 @@ def canonical_request_body(body: dict[str, Any]) -> bytes:
     return json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
 
 
-def reconstruct_sse(raw: bytes) -> tuple[str, str, bool]:
-    content: list[str] = []
-    model = ""
-    done = False
+def _data_payloads(raw: bytes) -> list[str]:
     try:
         text = raw.decode("utf-8")
     except UnicodeDecodeError as exc:
         raise TransportError("MALFORMED_SSE") from exc
+    payloads: list[str] = []
     for block in text.replace("\r\n", "\n").split("\n\n"):
         data_lines = [line[5:].lstrip() for line in block.splitlines() if line.startswith("data:")]
-        if not data_lines:
+        if data_lines:
+            payloads.append("\n".join(data_lines))
+    return payloads
+
+
+def _provider_sse_error(raw: bytes) -> _ProviderSSEError | None:
+    try:
+        payloads = _data_payloads(raw)
+    except TransportError:
+        return None
+    for data in payloads:
+        if data == "[DONE]":
             continue
-        data = "\n".join(data_lines)
+        try:
+            event = json.loads(data)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(event, dict) or "error" not in event:
+            continue
+        error = event["error"]
+        if not isinstance(error, dict):
+            return _ProviderSSEError(None, None)
+        code_value = error.get("code")
+        code = (
+            code_value if isinstance(code_value, int) and not isinstance(code_value, bool) else None
+        )
+        type_value = error.get("type")
+        error_type = type_value if isinstance(type_value, str) else None
+        return _ProviderSSEError(code, error_type)
+    return None
+
+
+def _read_sse_until_done(response: Any, raw: bytearray) -> bool:
+    """Read exact SSE bytes through the protocol terminator, never waiting for HTTP EOF."""
+    readline = getattr(response, "readline", None)
+    if not callable(readline):
+        # Compatibility for deterministic test doubles. Real urllib responses
+        # expose ``readline`` and always take the incremental path below.
+        raw.extend(response.read())
+        try:
+            return "[DONE]" in _data_payloads(bytes(raw))
+        except TransportError:
+            return False
+
+    event_data: list[bytes] = []
+    while True:
+        line = readline()
+        if line == b"":
+            return False
+        raw.extend(line)
+        normalized = line.rstrip(b"\r\n")
+        if normalized:
+            if normalized.startswith(b"data:"):
+                event_data.append(normalized[5:].lstrip())
+            continue
+        if event_data and b"\n".join(event_data) == b"[DONE]":
+            return True
+        event_data = []
+
+
+def reconstruct_sse(raw: bytes) -> tuple[str, str, bool]:
+    content: list[str] = []
+    model = ""
+    done = False
+    for data in _data_payloads(raw):
         if data == "[DONE]":
             done = True
             continue
@@ -210,6 +295,8 @@ class NvidiaSSETransport(Transport):
         http_status: int | None = None,
         response_headers: dict[str, str] | None = None,
         raw: bytes = b"",
+        provider_error_code: int | None = None,
+        provider_error_type: str | None = None,
     ) -> TransportError:
         """Record non-secret failure evidence and return the error to raise.
 
@@ -219,7 +306,7 @@ class NvidiaSSETransport(Transport):
         """
         evidence = TransportFailureEvidence(
             classification=classification,
-            retryable=classification.value in RETRYABLE_TRANSPORT_CLASSES,
+            retryable=_is_retryable(classification),
             request_sha256=request_sha256,
             http_status=http_status,
             response_headers=response_headers or {},
@@ -227,6 +314,8 @@ class NvidiaSSETransport(Transport):
             response_sha256=hashlib.sha256(raw).hexdigest(),
             elapsed_ms=int((time.monotonic() - started) * 1000),
             provider_run_occurred=http_status is not None or bool(raw),
+            provider_error_code=provider_error_code,
+            provider_error_type=provider_error_type,
             raw_response=raw if (self.capture_raw_response and raw) else None,
         )
         self.transport_failures.append(evidence)
@@ -267,11 +356,14 @@ class NvidiaSSETransport(Transport):
         if self.before_provider_call is not None:
             self.before_provider_call()
 
+        status: int | None = None
+        headers: dict[str, str] = {}
+        raw_buffer = bytearray()
         try:
             with urllib.request.urlopen(request, timeout=self.timeout) as response:
-                raw = response.read()
                 status = int(response.status)
                 headers = _allowed_headers(response.headers)
+                done = _read_sse_until_done(response, raw_buffer)
         except urllib.error.HTTPError as exc:
             cls = (
                 TransportClass.HTTP_429_RETRYABLE
@@ -292,17 +384,56 @@ class NvidiaSSETransport(Transport):
             ) from None
         except TimeoutError:
             raise self._record_failure(
-                TransportClass.TIMEOUT, request_sha256=request_sha256, started=started
+                TransportClass.TIMEOUT,
+                request_sha256=request_sha256,
+                started=started,
+                http_status=status,
+                response_headers=headers,
+                raw=bytes(raw_buffer),
             ) from None
         except OSError:
             raise self._record_failure(
-                TransportClass.CONNECT_FAILURE, request_sha256=request_sha256, started=started
+                TransportClass.CONNECT_FAILURE,
+                request_sha256=request_sha256,
+                started=started,
+                http_status=status,
+                response_headers=headers,
+                raw=bytes(raw_buffer),
             ) from None
+
+        raw = bytes(raw_buffer)
+        provider_error = _provider_sse_error(raw)
+        if provider_error is not None:
+            if not done:
+                raise self._record_failure(
+                    TransportClass.STREAM_INCOMPLETE,
+                    request_sha256=request_sha256,
+                    started=started,
+                    http_status=status,
+                    response_headers=headers,
+                    raw=raw,
+                )
+            classification = (
+                TransportClass.PROVIDER_SSE_RETRYABLE_ERROR
+                if provider_error.retryable
+                else TransportClass.PROVIDER_SSE_FATAL_ERROR
+            )
+            raise self._record_failure(
+                classification,
+                request_sha256=request_sha256,
+                started=started,
+                http_status=status,
+                response_headers=headers,
+                raw=raw,
+                provider_error_code=provider_error.code,
+                provider_error_type=provider_error.error_type,
+            ) from None
+
         try:
-            content, model, done = reconstruct_sse(raw)
+            content, model, reconstructed_done = reconstruct_sse(raw)
         except TransportError:
-            # The parser still refuses the stream. v1.2.1 only changes what the
-            # retry layer may do about it, never what the parser accepts.
+            # The parser still refuses malformed model-response frames. Provider
+            # error frames are separated above and are never coerced into model output.
             raise self._record_failure(
                 TransportClass.MALFORMED_SSE,
                 request_sha256=request_sha256,
@@ -311,7 +442,7 @@ class NvidiaSSETransport(Transport):
                 response_headers=headers,
                 raw=raw,
             ) from None
-        if not done:
+        if not done or not reconstructed_done:
             raise self._record_failure(
                 TransportClass.STREAM_INCOMPLETE,
                 request_sha256=request_sha256,
@@ -320,6 +451,8 @@ class NvidiaSSETransport(Transport):
                 response_headers=headers,
                 raw=raw,
             )
+        if status is None:  # pragma: no cover - urlopen response always carries a status
+            raise AssertionError("successful provider response missing HTTP status")
         evidence = TransportEvidence(
             TransportClass.SUCCESSFUL_MODEL_RESPONSE,
             request_body,
@@ -329,7 +462,7 @@ class NvidiaSSETransport(Transport):
             raw,
             content,
             model,
-            done,
+            reconstructed_done,
             int((time.monotonic() - started) * 1000),
             hashlib.sha256(raw).hexdigest(),
             True,
@@ -340,20 +473,21 @@ class NvidiaSSETransport(Transport):
     def complete_with_retries(self, body: dict[str, Any]) -> TransportEvidence:
         """Use the frozen deterministic 1s/2s schedule for transport failures only.
 
-        The schedule, the delays and the ceiling of three provider calls per
-        logical transport operation are unchanged from v1.2. v1.2.1 changes one
-        thing: ``MALFORMED_SSE`` is now a member of
-        :data:`RETRYABLE_TRANSPORT_CLASSES`, so a stream the parser refused may
-        be re-requested rather than failing the angle on the first occurrence.
+        The schedule, delays and ceiling of three provider calls per logical
+        transport operation are unchanged. Provider-side retryable SSE error
+        frames now share that existing bounded retry budget; they do not become
+        model output or consume adversarial attempts.
         """
         for retry, delay in enumerate((*RETRY_DELAYS_SECONDS, 0)):
             try:
                 return self.complete_body(body)
             except TransportError as exc:
                 self._stamp_retry_ordinal(retry)
-                if str(exc) not in RETRYABLE_TRANSPORT_CLASSES or retry == len(
-                    RETRY_DELAYS_SECONDS
-                ):
+                retryable = (
+                    str(exc) in RETRYABLE_TRANSPORT_CLASSES
+                    or str(exc) in PROVIDER_SSE_RETRYABLE_CLASSES
+                )
+                if not retryable or retry == len(RETRY_DELAYS_SECONDS):
                     raise
                 time.sleep(delay)
         raise AssertionError("unreachable")
