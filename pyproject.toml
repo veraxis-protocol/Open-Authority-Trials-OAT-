@@ -8,11 +8,15 @@ version = "0.1.0"
 description = "Open Authority Trials: adversarial evidence instrument for machine-authority boundaries (method-development only)"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "Apache-2.0" }
+license = { text = "BUSL-1.1" }
 authors = [{ name = "Veraxis Protocol" }]
 keywords = ["authority", "adversarial", "evidence", "toctou", "revocation"]
 classifiers = [
   "Development Status :: 3 - Alpha",
+  # Business Source License 1.1 is not an OSI-approved Open Source license.
+  # It converts to Apache License 2.0 on the Change Date; see LICENSE.md.
+  "License :: Other/Proprietary License",
+  "Private :: Do Not Upload",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",

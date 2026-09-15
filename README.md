@@ -102,6 +102,27 @@ tests/                  behavioral, tamper, replay, quarantine, and CLI suites
 Start with [`docs/CURRENT-STATE.md`](docs/CURRENT-STATE.md) and
 [`docs/METHOD-DEVELOPMENT-BOUNDARY.md`](docs/METHOD-DEVELOPMENT-BOUNDARY.md).
 
-## License
+## Licensing
 
-Apache-2.0. See [LICENSE.md](LICENSE.md).
+Three separate things, licensed three separate ways.
+
+| What | License | Where |
+| --- | --- | --- |
+| Reference implementation code (`oat/`, `tests/`, build and CI config) | **Business Source License 1.1** — *not an Open Source license*; changes to Apache License 2.0 on the Change Date `2030-09-15` | [LICENSE.md](LICENSE.md) |
+| Documentation, methodology, specifications, schemas, Formation Records | **CC BY 4.0** | [LICENSE-DOCS.md](LICENSE-DOCS.md) |
+| The OAT and Veraxis names, marks, and claim-bearing designation | **Reserved — no grant** | [TRADEMARKS-AND-STANDING.md](TRADEMARKS-AND-STANDING.md) |
+
+The BSL Additional Use Grant permits production use for research,
+independent reproduction, internal evaluation, benchmarking, security
+testing, and non-production enterprise pilots. Production deployment, paid
+assurance or certification services, managed OAT services, resale, and
+incorporation into a competing commercial authority-testing or assurance
+offering require separate Veraxis authorization.
+
+**No license here grants standing.** Running this code — lawfully and in
+full compliance — does not make a result claim-bearing, does not make anything
+"OAT approved", and does not change:
+
+```text
+CLAIM_BEARING_TRIAL_AUTHORIZED = FALSE
+```
