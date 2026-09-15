@@ -8,7 +8,7 @@ import os
 import time
 import urllib.error
 import urllib.request
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum
 from typing import Any
 
@@ -17,6 +17,7 @@ from oat.adversaries.provider import Transport, TransportError
 ENDPOINT = "https://integrate.api.nvidia.com/v1/chat/completions"
 ALLOWED_HEADERS = frozenset({"content-type", "date", "nvcf-reqid", "nvcf-status", "x-request-id"})
 RETRY_DELAYS_SECONDS = (1, 2)
+MAX_PROVIDER_CALLS_PER_LOGICAL_TRANSPORT = len(RETRY_DELAYS_SECONDS) + 1
 
 
 class TransportClass(str, Enum):
@@ -63,6 +64,82 @@ class TransportEvidence:
         }
 
 
+@dataclass(frozen=True)
+class TransportFailureEvidence:
+    """Non-secret evidence for a transport failure, kept for later diagnosis.
+
+    A failure is the one case where nothing is returned to the caller, so the
+    only record of what the provider did is this. It carries no credential:
+    the API key travels in a request header that is never captured, and
+    response headers are filtered through :data:`ALLOWED_HEADERS`.
+    """
+
+    classification: TransportClass
+    retryable: bool
+    request_sha256: str
+    http_status: int | None
+    response_headers: dict[str, str]
+    response_bytes: int
+    response_sha256: str
+    elapsed_ms: int
+    provider_run_occurred: bool
+    retry_ordinal: int | None = None
+    #: Development-only. ``None`` unless raw capture was explicitly enabled.
+    raw_response: bytes | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        record: dict[str, Any] = {
+            "classification": self.classification.value,
+            "retryable": self.retryable,
+            "request_sha256": self.request_sha256,
+            "http_status": self.http_status,
+            "response_headers": self.response_headers,
+            "response_bytes": self.response_bytes,
+            "response_sha256": self.response_sha256,
+            "elapsed_ms": self.elapsed_ms,
+            "provider_run_occurred": self.provider_run_occurred,
+            "retry_ordinal": self.retry_ordinal,
+        }
+        if self.raw_response is not None:
+            record["raw_response_development_only"] = self.raw_response.decode("utf-8", "replace")
+        return record
+
+
+#: Transport-level conditions the bounded retry schedule may repeat.
+#:
+#: ``MALFORMED_SSE`` is a member as of v1.2.1. That does not make a malformed
+#: stream acceptable - :func:`reconstruct_sse` still rejects it, and it is
+#: never converted into success, empty content, model output, negative
+#: evidence, an UNEVALUABLE witness, or a consumed adversarial attempt. It is
+#: a transport failure, so the whole provider call may be repeated under the
+#: same bounded policy that already covers the other five.
+RETRYABLE_TRANSPORT_CLASSES = frozenset(
+    {
+        TransportClass.HTTP_429_RETRYABLE.value,
+        TransportClass.HTTP_5XX_TRANSPORT_FAILURE.value,
+        TransportClass.CONNECT_FAILURE.value,
+        TransportClass.TIMEOUT.value,
+        TransportClass.STREAM_INCOMPLETE.value,
+        TransportClass.MALFORMED_SSE.value,
+    }
+)
+
+
+def _allowed_headers(headers: Any) -> dict[str, str]:
+    """Keep only the allow-listed response headers. Never any request header."""
+    if headers is None:
+        return {}
+    return {k.lower(): v for k, v in headers.items() if k.lower() in ALLOWED_HEADERS}
+
+
+def _read_error_body(exc: urllib.error.HTTPError) -> bytes:
+    """Best-effort read of an error body; a body that cannot be read is empty."""
+    try:
+        return bytes(exc.read())
+    except Exception:  # pragma: no cover - defensive; urllib may have closed it
+        return b""
+
+
 def canonical_request_body(body: dict[str, Any]) -> bytes:
     return json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
 
@@ -102,14 +179,55 @@ class NvidiaSSETransport(Transport):
     is_live = True
     name = "nvidia-https-sse"
 
-    def __init__(self, *, api_key_env: str = "NVIDIA_API_KEY", timeout: int = 120) -> None:
+    def __init__(
+        self,
+        *,
+        api_key_env: str = "NVIDIA_API_KEY",
+        timeout: int = 120,
+        capture_raw_response: bool = False,
+    ) -> None:
         self.api_key_env = api_key_env
         self.timeout = timeout
+        #: Development-only raw-byte capture. Off by default, and raw provider
+        #: bytes are never part of normal claim-bearing evidence.
+        self.capture_raw_response = capture_raw_response
         self.last_evidence: TransportEvidence | None = None
+        self.transport_failures: list[TransportFailureEvidence] = []
 
     @property
     def provider_run_occurred(self) -> bool:
         return bool(self.last_evidence and self.last_evidence.provider_run_occurred)
+
+    def _record_failure(
+        self,
+        classification: TransportClass,
+        *,
+        request_sha256: str,
+        started: float,
+        http_status: int | None = None,
+        response_headers: dict[str, str] | None = None,
+        raw: bytes = b"",
+    ) -> TransportError:
+        """Record non-secret failure evidence and return the error to raise.
+
+        ``provider_run_occurred`` is derived here the same way it is for a
+        success: from whether the provider actually answered. A status line or
+        response bytes mean it did, even when the stream was unusable.
+        """
+        evidence = TransportFailureEvidence(
+            classification=classification,
+            retryable=classification.value in RETRYABLE_TRANSPORT_CLASSES,
+            request_sha256=request_sha256,
+            http_status=http_status,
+            response_headers=response_headers or {},
+            response_bytes=len(raw),
+            response_sha256=hashlib.sha256(raw).hexdigest(),
+            elapsed_ms=int((time.monotonic() - started) * 1000),
+            provider_run_occurred=http_status is not None or bool(raw),
+            raw_response=raw if (self.capture_raw_response and raw) else None,
+        )
+        self.transport_failures.append(evidence)
+        return TransportError(classification.value)
 
     def complete(self, prompt: str) -> str:
         return self.complete_body(
@@ -131,6 +249,7 @@ class NvidiaSSETransport(Transport):
                 f"missing runtime secret in environment variable {self.api_key_env}"
             )
         request_body = canonical_request_body(body)
+        request_sha256 = hashlib.sha256(request_body).hexdigest()
         started = time.monotonic()
         request = urllib.request.Request(
             ENDPOINT,
@@ -146,11 +265,7 @@ class NvidiaSSETransport(Transport):
             with urllib.request.urlopen(request, timeout=self.timeout) as response:
                 raw = response.read()
                 status = int(response.status)
-                headers = {
-                    k.lower(): v
-                    for k, v in response.headers.items()
-                    if k.lower() in ALLOWED_HEADERS
-                }
+                headers = _allowed_headers(response.headers)
         except urllib.error.HTTPError as exc:
             cls = (
                 TransportClass.HTTP_429_RETRYABLE
@@ -161,18 +276,48 @@ class NvidiaSSETransport(Transport):
                     else TransportClass.HTTP_5XX_TRANSPORT_FAILURE
                 )
             )
-            raise TransportError(cls.value) from None
+            raise self._record_failure(
+                cls,
+                request_sha256=request_sha256,
+                started=started,
+                http_status=int(exc.code),
+                response_headers=_allowed_headers(exc.headers),
+                raw=_read_error_body(exc),
+            ) from None
         except TimeoutError:
-            raise TransportError(TransportClass.TIMEOUT.value) from None
+            raise self._record_failure(
+                TransportClass.TIMEOUT, request_sha256=request_sha256, started=started
+            ) from None
         except OSError:
-            raise TransportError(TransportClass.CONNECT_FAILURE.value) from None
-        content, model, done = reconstruct_sse(raw)
+            raise self._record_failure(
+                TransportClass.CONNECT_FAILURE, request_sha256=request_sha256, started=started
+            ) from None
+        try:
+            content, model, done = reconstruct_sse(raw)
+        except TransportError:
+            # The parser still refuses the stream. v1.2.1 only changes what the
+            # retry layer may do about it, never what the parser accepts.
+            raise self._record_failure(
+                TransportClass.MALFORMED_SSE,
+                request_sha256=request_sha256,
+                started=started,
+                http_status=status,
+                response_headers=headers,
+                raw=raw,
+            ) from None
         if not done:
-            raise TransportError(TransportClass.STREAM_INCOMPLETE.value)
+            raise self._record_failure(
+                TransportClass.STREAM_INCOMPLETE,
+                request_sha256=request_sha256,
+                started=started,
+                http_status=status,
+                response_headers=headers,
+                raw=raw,
+            )
         evidence = TransportEvidence(
             TransportClass.SUCCESSFUL_MODEL_RESPONSE,
             request_body,
-            hashlib.sha256(request_body).hexdigest(),
+            request_sha256,
             status,
             headers,
             raw,
@@ -187,19 +332,27 @@ class NvidiaSSETransport(Transport):
         return evidence
 
     def complete_with_retries(self, body: dict[str, Any]) -> TransportEvidence:
-        """Use the frozen deterministic 1s/2s schedule for transport failures only."""
-        retryable = {
-            TransportClass.HTTP_429_RETRYABLE.value,
-            TransportClass.HTTP_5XX_TRANSPORT_FAILURE.value,
-            TransportClass.CONNECT_FAILURE.value,
-            TransportClass.TIMEOUT.value,
-            TransportClass.STREAM_INCOMPLETE.value,
-        }
+        """Use the frozen deterministic 1s/2s schedule for transport failures only.
+
+        The schedule, the delays and the ceiling of three provider calls per
+        logical transport operation are unchanged from v1.2. v1.2.1 changes one
+        thing: ``MALFORMED_SSE`` is now a member of
+        :data:`RETRYABLE_TRANSPORT_CLASSES`, so a stream the parser refused may
+        be re-requested rather than failing the angle on the first occurrence.
+        """
         for retry, delay in enumerate((*RETRY_DELAYS_SECONDS, 0)):
             try:
                 return self.complete_body(body)
             except TransportError as exc:
-                if str(exc) not in retryable or retry == len(RETRY_DELAYS_SECONDS):
+                self._stamp_retry_ordinal(retry)
+                if str(exc) not in RETRYABLE_TRANSPORT_CLASSES or retry == len(
+                    RETRY_DELAYS_SECONDS
+                ):
                     raise
                 time.sleep(delay)
         raise AssertionError("unreachable")
+
+    def _stamp_retry_ordinal(self, retry: int) -> None:
+        """Attach the attempt ordinal to the failure record just written."""
+        if self.transport_failures and self.transport_failures[-1].retry_ordinal is None:
+            self.transport_failures[-1] = replace(self.transport_failures[-1], retry_ordinal=retry)
