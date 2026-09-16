@@ -18,6 +18,12 @@ from oat.veip.execution_path import (
     BudgetLedger,
 )
 from oat.veip.falsifiers import evaluate
+from oat.veip.launch_binding import (
+    AngleBinding,
+    aggregate_falsifier_evaluations,
+    ready_falsifiers_for_property,
+    resolve_angle_binding,
+)
 from oat.veip.orchestrator import (
     ATTEMPTS_PER_ANGLE,
     BASELINE_ANGLES,
@@ -480,6 +486,196 @@ def capture_and_evaluate_attempt(
     )
 
 
+def _evaluate_reply_for_falsifier(
+    *,
+    falsifier_id: str,
+    reply: dict[str, Any],
+    contract: WitnessContract,
+    invoke_fn: InvokeFn,
+    evaluate_fn: EvaluateFn,
+) -> dict[str, Any]:
+    """Evaluate one parsed reply against one READY frozen falsifier."""
+
+    try:
+        candidate = admit(contract, reply["candidate_witness"])
+    except (AdmissionError, KeyError, TypeError, ValueError) as exc:
+        return {
+            "falsifier_id": falsifier_id,
+            "property_id": contract.property_id,
+            "disposition": "UNEVALUABLE",
+            "reason_category": "WITNESS_SCHEMA_INVALID",
+            "internal_reason": str(exc),
+            "admitted_candidate": None,
+        }
+
+    try:
+        trace = invoke_fn(falsifier_id, candidate["inputs"])
+    except Exception as exc:
+        return {
+            "falsifier_id": falsifier_id,
+            "property_id": contract.property_id,
+            "disposition": "UNEVALUABLE",
+            "reason_category": "SUBJECT_INVOCATION_FAILED",
+            "internal_reason": f"{type(exc).__name__}: {exc}",
+            "admitted_candidate": candidate,
+        }
+
+    missing = [
+        observable for observable in contract.required_observables if observable not in trace
+    ]
+    if missing:
+        return {
+            "falsifier_id": falsifier_id,
+            "property_id": contract.property_id,
+            "disposition": "UNEVALUABLE",
+            "reason_category": "OBSERVABLE_MISSING",
+            "internal_reason": "missing observables: " + ", ".join(missing),
+            "admitted_candidate": candidate,
+            "observable_trace": trace,
+        }
+
+    result = evaluate_fn(falsifier_id, trace)
+    if result.get("disposition") == "UNEVALUABLE":
+        return {
+            "falsifier_id": falsifier_id,
+            "property_id": contract.property_id,
+            "disposition": "UNEVALUABLE",
+            "reason_category": "OTHER",
+            "internal_reason": str(result.get("reason", "UNEVALUABLE")),
+            "admitted_candidate": candidate,
+            "observable_trace": trace,
+            "verifier_result": result,
+        }
+
+    return {
+        "falsifier_id": falsifier_id,
+        "property_id": contract.property_id,
+        "disposition": str(result["disposition"]),
+        "admitted_candidate": candidate,
+        "observable_trace": trace,
+        "verifier_result": result,
+    }
+
+
+def capture_and_evaluate_bound_attempt(
+    *,
+    metadata: AttemptMetadata,
+    binding: AngleBinding,
+    contracts: dict[str, WitnessContract],
+    falsifiers: dict[str, dict[str, Any]],
+    rendered: RenderedProviderRequest,
+    raw_response: str,
+    transport_evidence: dict[str, Any],
+    ledger: BudgetLedger,
+    recorder: AttemptEvidenceRecorder,
+    invoke_fn: InvokeFn = invoke_subject,
+    evaluate_fn: EvaluateFn = evaluate,
+) -> tuple[AttemptCaptureReceipt, AttemptEvaluationReceipt]:
+    """Apply EXEC-LAUNCH-BINDING-001 to one provider response.
+
+    The provider response is captured once and consumes one logical attempt.
+    Multi-falsifier angles then evaluate that same captured candidate against
+    every READY associated falsifier in frozen taxonomy order. Open discovery
+    selects no falsifier before invocation; after parsing, an existing READY
+    property uses its already-frozen falsifier, while an unmapped/new property
+    is recorded OUTSIDE_SCOPE.
+    """
+
+    capture = recorder.capture(
+        metadata,
+        rendered=rendered,
+        raw_response=raw_response,
+        transport_evidence=transport_evidence,
+        ledger=ledger,
+    )
+    ledger.consume_logical_attempt()
+
+    try:
+        reply = parse_reply(raw_response)
+    except AdmissionError as exc:
+        reason = str(exc)
+        category = (
+            "PROTOCOL_VIOLATION"
+            if reason == "ADVERSARY_PROTOCOL_VIOLATION"
+            else "RESPONSE_MALFORMED"
+        )
+        record = _unevaluable_record(
+            metadata=metadata,
+            category=category,
+            internal_reason=reason,
+            ledger=ledger,
+        )
+        record["launch_binding"] = {
+            "open_discovery": binding.open_discovery,
+            "ready_falsifier_ids": list(binding.ready_falsifier_ids),
+        }
+        return capture, recorder.append_evaluation(
+            metadata,
+            capture=capture,
+            record=record,
+        )
+
+    evaluation_ids = binding.ready_falsifier_ids
+    if binding.open_discovery:
+        property_id = str(reply.get("property_id", ""))
+        evaluation_ids = ready_falsifiers_for_property(property_id, falsifiers)
+        if not evaluation_ids:
+            record = {
+                "attack_id": metadata.attack_id,
+                "round": metadata.round_number,
+                "attempt": metadata.attempt_number,
+                "disposition": "OUTSIDE_SCOPE",
+                "parsed_reply": reply,
+                "open_discovery": True,
+                "mapped_ready_falsifier_ids": [],
+                "out_of_scope_reason": "NEW_OR_UNMAPPED_PROPERTY_NO_READY_FROZEN_FALSIFIER",
+                "attempt_consumed": True,
+                "budget_after_attempt": ledger.to_dict(),
+            }
+            return capture, recorder.append_evaluation(
+                metadata,
+                capture=capture,
+                record=record,
+            )
+
+    per_falsifier: list[dict[str, Any]] = []
+    for falsifier_id in evaluation_ids:
+        per_falsifier.append(
+            _evaluate_reply_for_falsifier(
+                falsifier_id=falsifier_id,
+                reply=reply,
+                contract=contracts[falsifier_id],
+                invoke_fn=invoke_fn,
+                evaluate_fn=evaluate_fn,
+            )
+        )
+
+    disposition, reason_category = aggregate_falsifier_evaluations(per_falsifier)
+    record = {
+        "attack_id": metadata.attack_id,
+        "round": metadata.round_number,
+        "attempt": metadata.attempt_number,
+        "disposition": disposition,
+        "parsed_reply": reply,
+        "open_discovery": binding.open_discovery,
+        "evaluated_falsifier_ids": list(evaluation_ids),
+        "falsifier_evaluations": per_falsifier,
+        "aggregation_rule": (
+            "ANY_COUNTEREXAMPLE_VALIDATED_ELSE_ALL_NEGATIVE_REQUIRED_ELSE_UNEVALUABLE"
+        ),
+        "attempt_consumed": True,
+        "budget_after_attempt": ledger.to_dict(),
+    }
+    if reason_category is not None:
+        record["reason_category"] = reason_category
+
+    return capture, recorder.append_evaluation(
+        metadata,
+        capture=capture,
+        record=record,
+    )
+
+
 class RetryTransport(Protocol):
     """Structural contract used by the bounded execution path."""
 
@@ -520,11 +716,16 @@ def _write_angle_terminal(
     not_executed_due_to_upstream_stop: bool = False,
     transport_failures: list[dict[str, Any]] | None = None,
 ) -> AngleTerminalReceipt:
+    declared_falsifiers = (
+        [str(value) for value in angle["falsifiers"]]
+        if "falsifiers" in angle
+        else [str(angle["falsifier_id"])]
+    )
     record: dict[str, Any] = {
         "form": "oat-exp001-angle-terminal/1",
         "attack_id": str(angle["attack_id"]),
         "family": str(angle["family"]),
-        "falsifier_id": str(angle["falsifier_id"]),
+        "falsifier_ids": declared_falsifiers,
         "disposition": disposition,
         "terminal_reason": terminal_reason,
         "attempts_completed": attempts_completed,
@@ -580,13 +781,11 @@ def _validate_baseline_inputs(
         raise ValueError("subject identity is not bound")
 
     for angle in angles:
-        falsifier_id = str(angle["falsifier_id"])
+        binding = resolve_angle_binding(angle, falsifiers)
 
-        if falsifier_id not in contracts:
-            raise ValueError(f"missing witness contract for {falsifier_id}")
-
-        if falsifier_id not in falsifiers:
-            raise ValueError(f"missing frozen falsifier entry for {falsifier_id}")
+        for falsifier_id in binding.ready_falsifier_ids:
+            if falsifier_id not in contracts:
+                raise ValueError(f"missing witness contract for {falsifier_id}")
 
 
 def run_experiment001_baseline(
@@ -711,9 +910,7 @@ def run_experiment001_baseline(
 
     for angle_index, angle in enumerate(angles):
         attack_id = str(angle["attack_id"])
-        falsifier_id = str(angle["falsifier_id"])
-        contract = contracts[falsifier_id]
-        falsifier = falsifiers[falsifier_id]
+        binding = resolve_angle_binding(angle, falsifiers)
 
         angle_history: list[dict[str, Any]] = []
         counterexample_found = False
@@ -722,7 +919,7 @@ def run_experiment001_baseline(
             for attempt_number in range(1, ATTEMPTS_PER_ANGLE + 1):
                 rendered = render_provider_request(
                     angle,
-                    falsifier,
+                    binding.render_falsifier,
                     round_number=round_number,
                     attempt_number=attempt_number,
                     history=angle_history,
@@ -771,8 +968,8 @@ def run_experiment001_baseline(
                 metadata = AttemptMetadata(
                     attack_id=attack_id,
                     attack_family=str(angle["family"]),
-                    property_id=str(falsifier["property_id"]),
-                    falsifier_id=falsifier_id,
+                    property_id=binding.property_label,
+                    falsifier_id=binding.falsifier_label,
                     target_components=tuple(
                         str(x)
                         for x in angle.get(
@@ -833,9 +1030,11 @@ def run_experiment001_baseline(
                         reason="PROVIDER_MODEL_IDENTITY_MISMATCH",
                     )
 
-                capture, evaluation = capture_and_evaluate_attempt(
+                capture, evaluation = capture_and_evaluate_bound_attempt(
                     metadata=metadata,
-                    contract=contract,
+                    binding=binding,
+                    contracts=contracts,
+                    falsifiers=falsifiers,
                     rendered=rendered,
                     raw_response=(transport_evidence.reconstructed_content),
                     transport_evidence=bundled_transport_evidence,
