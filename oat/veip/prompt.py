@@ -51,6 +51,34 @@ CONSTRAINTS
 - Do not invent a capability the subject does not have in order to attack it.
 - Stay within the attack angle you are given."""
 
+OPEN_DISCOVERY_SYSTEM_PROMPT = SYSTEM_PROMPT.replace(
+    "- You MUST NOT propose changes to any property definition, falsifier,\n"
+    "  counterexample condition, or to this taxonomy. They are frozen. An attempt\n"
+    "  to reinterpret a falsifier is not an attack; it is out of scope.",
+    "- You MUST NOT propose changes to any existing property definition, falsifier,\n"
+    "  counterexample condition, or to this taxonomy. They are frozen. An attempt\n"
+    "  to reinterpret a falsifier is not an attack; it is out of scope.\n"
+    "- For ATTACK-FAMILY-X only, you MAY propose a new property explicitly. Use a\n"
+    "  new property_id and describe the proposed property semantics in\n"
+    "  attack_hypothesis. OAT will record any new or unmapped property as\n"
+    "  OUTSIDE_SCOPE; it cannot be admitted or validated mid-experiment.",
+).replace(
+    '"property_id": "<the frozen property ID you are targeting>"',
+    (
+        '"property_id": "<an existing frozen property ID, or for ATTACK-FAMILY-X '
+        'an explicit proposed new property ID>"'
+    ),
+)
+
+
+def system_prompt_for(angle: dict[str, Any]) -> str:
+    """Return the exact system prompt for one frozen attack angle."""
+
+    if str(angle.get("attack_id")) == "ATTACK-FAMILY-X":
+        return OPEN_DISCOVERY_SYSTEM_PROMPT
+    return SYSTEM_PROMPT
+
+
 DISPOSITIONS = frozenset(
     {
         "COUNTEREXAMPLE_VALIDATED",
@@ -116,5 +144,6 @@ ATTEMPT {attempt_number} OF {attempts_per_angle}, ROUND {round_number} OF {round
             ]
         )
         round_block = "\n".join(lines)
-    data = f"{SYSTEM_PROMPT}\n\n{angle_block}\n\n{round_block}".encode()
+    system_prompt = system_prompt_for(angle)
+    data = f"{system_prompt}\n\n{angle_block}\n\n{round_block}".encode()
     return data, digest_bytes(data)

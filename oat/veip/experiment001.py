@@ -30,7 +30,7 @@ from oat.veip.orchestrator import (
     ROUNDS,
     parse_reply,
 )
-from oat.veip.prompt import SYSTEM_PROMPT, render
+from oat.veip.prompt import render, system_prompt_for
 from oat.veip.subject import invoke as invoke_subject
 from oat.veip.transport import (
     ENDPOINT,
@@ -125,7 +125,8 @@ def render_provider_request(
         feedback=feedback,
     )
 
-    prefix = f"{SYSTEM_PROMPT}\n\n".encode()
+    system_prompt = system_prompt_for(angle)
+    prefix = f"{system_prompt}\n\n".encode()
 
     if not prompt_bytes.startswith(prefix):
         raise AssertionError("frozen prompt renderer/system boundary changed")
@@ -137,7 +138,7 @@ def render_provider_request(
         "messages": [
             {
                 "role": "system",
-                "content": SYSTEM_PROMPT,
+                "content": system_prompt,
             },
             {
                 "role": "user",
