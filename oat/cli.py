@@ -13,7 +13,9 @@ from pathlib import Path
 from typing import Any
 
 from oat import CLAIM_BEARING_USE, CLAIM_CEILING, RUN_MODE, __version__
+from oat.consequence.scenarios import SCENARIOS as CONSEQUENCE_SCENARIOS
 from oat.dryrun import run_dry_run
+from oat.evidence import replay as consequence_replay
 from oat.manifest import read_json
 from oat.pipeline import (
     run_scenario,
@@ -199,6 +201,73 @@ def cmd_dryrun(args: argparse.Namespace, stream: Any) -> int:
     return 0 if report["dryrun_ok"] else 7
 
 
+# --- consequence-boundary commands -------------------------------------
+
+
+def cmd_consequence_run(args: argparse.Namespace, stream: Any) -> int:
+    """Execute a deterministic consequence-boundary scenario."""
+    banner(stream)
+    try:
+        package = consequence_replay.run_scenario(args.scenario)
+    except KeyError as exc:
+        print(str(exc).strip('"'), file=stream)
+        return 2
+    verdict = package["verdict"]
+    print(f"scenario    = {package['scenario']}", file=stream)
+    print(f"disposition = {verdict['disposition']}", file=stream)
+    print(f"reason      = {verdict['reason']}", file=stream)
+    print(f"evidence    = {package['evidence_digest']}", file=stream)
+    if args.out:
+        target = consequence_replay.write_package(package, args.out)
+        print(f"written     = {target}", file=stream)
+    _emit(package, args.json, stream)
+    return 0
+
+
+def cmd_consequence_verify(args: argparse.Namespace, stream: Any) -> int:
+    """Recompute the evidence digest of a stored consequence run."""
+    banner(stream)
+    package = consequence_replay.read_package(args.run)
+    ok, detail = consequence_replay.verify_package(package)
+    print(f"verify = {'PASS' if ok else 'FAIL'}", file=stream)
+    print(detail, file=stream)
+    _emit({"verify": ok, "detail": detail}, args.json, stream)
+    return 0 if ok else 1
+
+
+def cmd_consequence_replay(args: argparse.Namespace, stream: Any) -> int:
+    """Replay a stored consequence run without any provider."""
+    banner(stream)
+    package = consequence_replay.read_package(args.run)
+    ok, detail = consequence_replay.replay_scenario(package["scenario"], package)
+    print(f"replay = {'PASS' if ok else 'FAIL'}", file=stream)
+    print(detail, file=stream)
+    _emit({"replay": ok, "detail": detail}, args.json, stream)
+    return 0 if ok else 1
+
+
+def cmd_paths_inspect(args: argparse.Namespace, stream: Any) -> int:
+    """Show declared versus observed routes for a stored run."""
+    banner(stream)
+    package = consequence_replay.read_package(args.run)
+    reconciliation = package["verdict"]["path_reconciliation"] or {}
+    for key in (
+        "declared_path_set",
+        "observed_path_set",
+        "unknown_observed_paths",
+        "unexercised_declared_paths",
+    ):
+        values = reconciliation.get(key) or []
+        print(f"{key:28} = {', '.join(values) if values else '(none)'}", file=stream)
+    print(
+        "\nA declared inventory is evidence about what the designers believed.\n"
+        "It is not ground truth about what the agent can reach.",
+        file=stream,
+    )
+    _emit(reconciliation, args.json, stream)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="oat",
@@ -241,6 +310,30 @@ def build_parser() -> argparse.ArgumentParser:
     dryrun_parser.add_argument("--control", default="scenarios/rb001/CONTROL.json")
     dryrun_parser.add_argument("--out", default=None)
     dryrun_parser.set_defaults(handler=cmd_dryrun)
+
+    consequence_parser = sub.add_parser(
+        "consequence", help="deterministic consequence-boundary instrument"
+    )
+    consequence_sub = consequence_parser.add_subparsers(dest="consequence_command", required=True)
+
+    cons_run = consequence_sub.add_parser("run", help="run a consequence-boundary scenario")
+    cons_run.add_argument("scenario", choices=sorted(CONSEQUENCE_SCENARIOS))
+    cons_run.add_argument("--out", default=None, help="write the run package here")
+    cons_run.set_defaults(handler=cmd_consequence_run)
+
+    cons_verify = consequence_sub.add_parser("verify", help="verify stored consequence evidence")
+    cons_verify.add_argument("run")
+    cons_verify.set_defaults(handler=cmd_consequence_verify)
+
+    cons_replay = consequence_sub.add_parser("replay", help="replay a consequence run")
+    cons_replay.add_argument("run")
+    cons_replay.set_defaults(handler=cmd_consequence_replay)
+
+    paths_parser = sub.add_parser("paths", help="declared versus actually observed routes")
+    paths_sub = paths_parser.add_subparsers(dest="paths_command", required=True)
+    paths_inspect = paths_sub.add_parser("inspect", help="inspect route reconciliation")
+    paths_inspect.add_argument("run")
+    paths_inspect.set_defaults(handler=cmd_paths_inspect)
 
     return parser
 
