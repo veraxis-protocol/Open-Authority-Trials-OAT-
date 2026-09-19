@@ -13,8 +13,6 @@ authors = [{ name = "Veraxis Protocol" }]
 keywords = ["authority", "adversarial", "evidence", "toctou", "revocation"]
 classifiers = [
   "Development Status :: 3 - Alpha",
-  # Business Source License 1.1 is not an OSI-approved Open Source license.
-  # It converts to Apache License 2.0 on the Change Date; see LICENSE.md.
   "License :: Other/Proprietary License",
   "Private :: Do Not Upload",
   "Programming Language :: Python :: 3.10",
@@ -41,7 +39,12 @@ oat = "oat.cli:main"
 packages = [
   "oat",
   "oat.adversaries",
+  "oat.authority",
+  "oat.consequence",
+  "oat.evidence",
   "oat.falsifiers",
+  "oat.integration",
+  "oat.paths",
   "oat.reference_boundaries",
   "oat.verifier",
   "oat.schemas",
