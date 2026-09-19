@@ -1,37 +1,76 @@
 # Current state
 
 ```text
+STATUS = METHOD_DEVELOPMENT_ONLY
+CLAIM_BEARING_USE = PROHIBITED
 CLAIM_BEARING_TRIAL_AUTHORIZED = FALSE
-PERMITTED_MODE                 = METHOD_DEVELOPMENT_ONLY
-CLAIM_BEARING_USE              = PROHIBITED
-GITHUB_ACTIONS                 = NOT_RUN_REMOTE_NOT_CREATED
+```
+
+This file describes what exists **at this commit**. Historical statements
+belong in `docs/formation/` and in Git history, not here. If something in
+this file is no longer true, the file is wrong and should be fixed.
+
+## Doctrine
+
+```text
+CONSEQUENCE_BOUNDARY_INSTRUMENT     = DETERMINISTIC_REFERENCE_IMPLEMENTATION
+REAL_TARGET_INTEGRATION             = NOT_ESTABLISHED
+REAL_ENTERPRISE_ALL_ROUTE_ASSURANCE = NOT_ESTABLISHED
+PROVIDER_EXPERIMENT                 = NOT_AUTHORIZED_BY_THIS_REFACTOR
+CLAIM_BEARING_TRIAL                 = NOT_AUTHORIZED
+CLAIM_BEARING_USE                   = PROHIBITED
 ```
 
 ## What exists
 
-- A frozen synthetic reference boundary, **RB-001** (revocation-before-commit /
-  TOCTOU), with two defective enforcement paths and one correct one.
-- A machine-evaluable RB-001 falsifier that returns a predicate trace.
-- A deterministic local adversary performing an ordered grid search over the
-  scenario's declared variation dimensions.
-- **V1**, a deterministic verifier that recomputes every value it reports and
-  rejects schema-invalid, misbound, tampered, or unsupported input.
-- Deterministic replay that reproduces a frozen run without the adversary.
-- A checked-in reference run under `examples/rb001/reference-run/`.
+**Consequence-boundary instrument.** A deterministic reference
+implementation of the primary falsifier:
+
+- `oat/consequence/` — protected sink, exact-action normalization, commit
+  events, independent receipts, reference interlock, scenarios
+- `oat/authority/` — authority epochs, authority-at-commit lookup,
+  the `ValidAuthorization` relation, delegation and non-amplification
+- `oat/paths/` — declared inventory, sink-side observations, and the
+  declared/observed reconciliation
+- `oat/verifier/consequence.py` — the falsifier and disposition taxonomy
+- `oat/evidence/` — evidence graph with missing-edge detection, and
+  deterministic run/replay
+
+**RB-001 reference boundary.** The original revocation-before-commit
+testbed, preserved and still passing: `oat/reference_boundaries/rb001.py`,
+`oat/falsifiers/rb001.py`, `oat/verifier/v1.py`, `oat/pipeline.py`,
+`oat/replay.py`, `oat/trial.py`, `oat/witness.py`, `oat/manifest.py`.
+
+**Shared machinery.** Canonicalization (`oat/canonical.py`), digests
+(`oat/digest.py`), manifest binding, the claim quarantine, licensing
+enforcement, and the CLI.
+
+**CLI.** `run`, `verify`, `replay`, `inspect`, `demo`, `dryrun` (RB-001) plus
+`consequence run|verify|replay` and `paths inspect`.
+
+**Remote.** The GitHub remote exists at
+`veraxis-protocol/Open-Authority-Trials-OAT-`, `main` is public, and GitHub
+Actions runs on push across Python 3.10, 3.11 and 3.12. The pre-refactor
+generation is preserved at tag `oat-method-development-v0.1`.
+
+**Provider seam.** `oat/adversaries/provider.py` is a real adapter, not a
+stub that only raises. It derives `provider_run_occurred` from the transport
+so an offline run cannot be relabelled as a live one. `UnconfiguredTransport`
+refuses loudly; `ScriptedTransport` replays fixed responses offline.
 
 ## What does not exist
 
-- Any claim-bearing trial. None is authorized.
-- Any frontier-model or provider adversary run. The provider seam is an
-  interface only (`oat.adversaries.base.ProviderAdversary`), and it raises
-  rather than pretending to have run.
-- Any evaluation of VEIP, OAuth, an agent framework, a vendor, or a deployed
-  system. RB-001 is synthetic and models nothing real.
-- Any GitHub Actions result. The remote does not exist yet; CI is configured
-  but has never run remotely.
+- Any frontier-model or provider adversary run. No provider call has been
+  made from this repository, and none is authorized.
+- Any real target integration. The sink, authorization artifact, authority
+  store and routes are representative deterministic primitives.
+- Any all-route assurance claim about any real system.
+- Any claim-bearing result, standing, or certification of anything.
+- Experiment 001 execution. It remains stopped and is not resumed here.
 
-## Claim ceiling
+## Honest limits of a clean run
 
-A deterministic local instrument reproduced a documented synthetic
-authorization failure class under frozen scenario conditions. That is the
-entire claim. It supports no statement about any external system.
+A `NO_BOUNDARY_COUNTEREXAMPLE` verdict is scoped to the routes actually
+exercised, and every run reports its `unexercised_declared_paths`. Absence of
+a counterexample on declared routes is not evidence that all reachable routes
+are controlled — see `docs/REACHABILITY-AND-UNKNOWN-PATHS.md`.
