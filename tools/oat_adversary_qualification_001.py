@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Any
 
 from oat.qualification import GENERATOR_VERSION, QUALIFICATION_ID
+from oat.qualification.evidence_store import persist_and_verify, verify_manifest, write_manifest
 from oat.qualification.runner import run_candidate_on_target
 from oat.qualification.selection import CandidateAggregate, select
 from oat.qualification.synthetic_targets import generate_corpus, seed_commitment
@@ -43,6 +44,7 @@ FROZEN_INPUTS: dict[str, Path] = {
     "generator": ROOT / "oat" / "qualification" / "synthetic_targets.py",
     "target_service": ROOT / "oat" / "qualification" / "target_service.py",
     "runner": ROOT / "oat" / "qualification" / "runner.py",
+    "evidence_store": ROOT / "oat" / "qualification" / "evidence_store.py",
     "leak_audit": ROOT / "oat" / "qualification" / "leak_audit.py",
     "probes": ROOT / "oat" / "qualification" / "probes.py",
     "selection": ROOT / "oat" / "qualification" / "selection.py",
@@ -55,6 +57,10 @@ FROZEN_INPUTS: dict[str, Path] = {
 
 def sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _write_json(path: Path, value: object) -> None:
+    path.write_text(json.dumps(value, sort_keys=True, indent=2) + "\n", encoding="utf-8")
 
 
 def build_freeze(seed_commitment_value: str) -> dict[str, Any]:
@@ -93,43 +99,73 @@ def cmd_run(args: argparse.Namespace) -> int:
     freeze = json.loads(args.frozen_manifest.read_text())
     if freeze["seed_commitment"] != seed_commitment(args.seed):
         raise SystemExit("seed does not match the frozen seed commitment; refusing to run")
+
+    # Reconcile every frozen input, calling the generator digest out explicitly.
+    reconciliation: dict[str, Any] = {"frozen_inputs": {}}
     for name, path in FROZEN_INPUTS.items():
-        if sha256_file(path) != freeze["frozen_inputs"][name]:
+        observed = sha256_file(path)
+        expected = freeze["frozen_inputs"][name]
+        reconciliation["frozen_inputs"][name] = {"expected": expected, "observed": observed}
+        if observed != expected:
             raise SystemExit(f"frozen input changed since freeze: {name}")
+    reconciliation["generator_digest"] = {
+        "expected": freeze["frozen_inputs"]["generator"],
+        "observed": sha256_file(FROZEN_INPUTS["generator"]),
+        "reconciled": True,
+    }
     for cid, path in CANDIDATES.items():
         if sha256_file(path) != freeze["candidate_prompts"][cid]:
             raise SystemExit(f"candidate prompt changed since freeze: {cid}")
 
-    from oat.qualification.provider import NimTransport
+    # Mandatory provider preflight: fail closed unless it matches the frozen
+    # qualification transport. No provider call is made until this passes.
+    from oat.qualification.provider import NimTransport, verify_qualification_preflight
+
+    if args.provider_preflight is None or not args.provider_preflight.exists():
+        raise SystemExit("run requires --provider-preflight artifact; refusing to run")
+    gate = verify_qualification_preflight(json.loads(args.provider_preflight.read_text()))
+    if gate["status"] != "PASS":
+        raise SystemExit(f"provider preflight gate failed: {gate['checks']}")
 
     transport = NimTransport()
     corpus = generate_corpus(args.seed)
+    args.out.mkdir(parents=True, exist_ok=True)
     matrix: dict[str, list[dict[str, Any]]] = {}
     for cid, path in CANDIDATES.items():
         prompt = path.read_text(encoding="utf-8")
-        matrix[cid] = [
-            run_candidate_on_target(
+        published_results = []
+        for target in corpus:
+            raw = run_candidate_on_target(
                 candidate_id=cid,
                 candidate_prompt=prompt,
                 target=target,
                 transport=transport,
                 seed=args.seed,
             )
-            for target in corpus
-        ]
+            # Persist the full evidence, seal and verify it, replay from disk,
+            # and take the evidence-derived integrity/replay verdict.
+            published_results.append(persist_and_verify(args.out, raw))
+        matrix[cid] = published_results
 
     outcome = select([CandidateAggregate(cid, results) for cid, results in matrix.items()])
-    args.out.mkdir(parents=True, exist_ok=True)
-    # Strip adjudicator-only evidence from the published matrix.
-    published = {
-        cid: [{k: v for k, v in r.items() if k != "adjudicator_evidence"} for r in results]
-        for cid, results in matrix.items()
-    }
-    (args.out / "result-matrix.json").write_text(
-        json.dumps(published, sort_keys=True, indent=2) + "\n"
+    published_dir = args.out / "published"
+    published_dir.mkdir(parents=True, exist_ok=True)
+    _write_json(published_dir / "result-matrix.json", matrix)
+    _write_json(published_dir / "selection.json", outcome)
+    _write_json(args.out / "preflight-gate.json", gate)
+    _write_json(args.out / "input-reconciliation.json", reconciliation)
+    write_manifest(published_dir)
+    published_integrity = verify_manifest(published_dir)
+    print(
+        json.dumps(
+            {
+                "outcome": outcome["outcome"],
+                "out": str(args.out),
+                "published_integrity": published_integrity["status"],
+            },
+            indent=2,
+        )
     )
-    (args.out / "selection.json").write_text(json.dumps(outcome, sort_keys=True, indent=2) + "\n")
-    print(json.dumps({"outcome": outcome["outcome"], "out": str(args.out)}, indent=2))
     return 0
 
 
@@ -148,6 +184,12 @@ def main() -> int:
         "--seed", required=True, help="adjudicator-only seed matching the frozen commitment"
     )
     r.add_argument("--frozen-manifest", type=Path, required=True)
+    r.add_argument(
+        "--provider-preflight",
+        type=Path,
+        required=True,
+        help="PASS artifact from the provider preflight tool; verified against the transport",
+    )
     r.add_argument("--out", type=Path, required=True)
     r.set_defaults(func=cmd_run)
 

@@ -99,3 +99,32 @@ class NimTransport:
         if not done:
             raise ProviderFailure("stream incomplete")
         return content
+
+
+PROVIDER_PREFLIGHT_TOOL_ID = "OAT-NVIDIA-PROVIDER-PREFLIGHT"
+
+PREFLIGHT_PASS = "PASS"
+PREFLIGHT_FAIL = "FAIL"
+
+
+def verify_qualification_preflight(record: dict[str, object]) -> dict[str, object]:
+    """Fail closed unless the preflight artifact matches the frozen transport.
+
+    The qualification transport is this module's NimTransport, so a preflight
+    is only admissible when it proves the same endpoint and model, a completed
+    stream, the expected tool identity, and PASS status. Any mismatch, or a
+    missing artifact, blocks execution before a single owner-facing call.
+    """
+    checks = {
+        "endpoint_matches": record.get("endpoint") == ENDPOINT,
+        "model_matches": record.get("model") == MODEL,
+        "preflight_status_pass": record.get("preflight_status") == PREFLIGHT_PASS,
+        "stream_completed": bool(record.get("stream_done_observed")),
+        "tool_identity_matches": record.get("tool_id") == PROVIDER_PREFLIGHT_TOOL_ID,
+    }
+    return {
+        "artifact": "QUALIFICATION_PROVIDER_PREFLIGHT_GATE",
+        "checks": checks,
+        "classification": record.get("classification"),
+        "status": PREFLIGHT_PASS if all(checks.values()) else PREFLIGHT_FAIL,
+    }
