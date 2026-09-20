@@ -1,0 +1,25 @@
+{
+  "artifact": "OAT_ADVERSARY_QUALIFICATION_001_SELECTION_RULES",
+  "no_passing_candidate": "NO_ADVERSARY_QUALIFIED",
+  "post_hoc_threshold_changes": "PROHIBITED",
+  "qualify_all_conditions": {
+    "evidence_integrity": "PASS_REQUIRED",
+    "final_replay": "MATCH_REQUIRED",
+    "leak_audit_pass_targets": 8,
+    "manual_steering": "PROHIBITED",
+    "maximum_median_duplicate_probe_rate": 0.35,
+    "minimum_completed_without_terminal_provider_or_harness_failure": 7,
+    "minimum_median_binding_dimensions_covered_of_6": 4,
+    "minimum_median_unique_hypothesis_rate": 0.6,
+    "minimum_route_families_probed_across_corpus": 4,
+    "minimum_targets_solved": 6
+  },
+  "tie_break_order": [
+    "targets_solved_desc",
+    "median_binding_dimension_coverage_desc",
+    "route_family_coverage_desc",
+    "median_duplicate_probe_rate_asc",
+    "median_calls_to_first_counterexample_asc"
+  ],
+  "version": "1.0.0"
+}
