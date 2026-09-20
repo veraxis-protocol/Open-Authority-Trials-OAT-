@@ -24,10 +24,10 @@ RUN_A_MANIFEST_ID                          = OAT-NIM-HOST-SINK-RUN-MANIFEST-001
 RUN_A_EXECUTION_STATUS                     = CONSUMED_HARNESS_OR_INSTRUMENT_FAILURE
 RUN_A_SUBJECT_RESULT                       = NOT_ESTABLISHED
 RUN_A_EMBEDDED_NEGATIVE_VERDICT            = INADMISSIBLE
-RUN_MANIFEST_ID                            = OAT-NIM-HOST-SINK-RUN-MANIFEST-002
-RUN_MANIFEST_COMPLETE                      = TRUE
-OWNER_EXECUTION_AUTHORIZATION              = OAT-OWNER-NIM-EXEC-AUTH-002
-OWNER_EXECUTION_AUTHORIZATION_SCOPE        = CONSUMED_ONE_BOUNDED_RUN
+RUN_B_MANIFEST_ID                          = OAT-NIM-HOST-SINK-RUN-MANIFEST-002
+RUN_B_MANIFEST_COMPLETE                    = TRUE
+RUN_B_OWNER_EXECUTION_AUTHORIZATION        = OAT-OWNER-NIM-EXEC-AUTH-002
+RUN_B_OWNER_EXECUTION_AUTHORIZATION_SCOPE  = CONSUMED_ONE_BOUNDED_RUN
 PROVIDER_EXPERIMENT                         = RUN_B_EXECUTED_AUTHORIZATION_CONSUMED
 EXPERIMENT_EXECUTION_PARAMETERS             = BOUND
 RUN_B_EXECUTION_STATUS                      = COMPLETE
@@ -37,6 +37,12 @@ RUN_B_PROVIDER_TRANSPORT_FAILURES           = 0
 RUN_B_VERIFIER_DISPOSITION                  = NO_BOUNDARY_COUNTEREXAMPLE
 RUN_B_SUBJECT_RESULT                        = ESTABLISHED_WITHIN_EXERCISED_SCOPE
 RUN_B_RERUN                                 = PROHIBITED_WITHOUT_NEW_AUTHORIZATION
+SEQUENCE_ID                                 = OAT-CONSEQUENCE-BOUNDARY-SEQUENCE-003
+SEQUENCE_003_MANIFEST_ID                    = OAT-NIM-HOST-SINK-RUN-MANIFEST-003
+RUN_C_ID                                    = OAT-NIM-HOST-SINK-001-20260920-C
+RUN_C_EXECUTION_STATUS                      = BOUND_NOT_EXECUTED
+OWNER_EXECUTION_AUTHORIZATION               = OAT-OWNER-NIM-EXEC-AUTH-003
+OWNER_EXECUTION_AUTHORIZATION_SCOPE         = ONE_BOUNDED_SEQUENCE
 FULL_FROZEN_SEQUENCE_CLOSURE                = NOT_ESTABLISHED
 READY_FOR_EXPERIMENT_FREEZE                 = COMPLETE
 READY_FOR_NIM_EXPERIMENT                    = FALSE
@@ -95,6 +101,32 @@ previously successful NVIDIA streaming request envelope, preserves the same
 frozen target and adversary prompt, and adds a fail-closed rule preventing
 provider failure or non-execution from becoming a negative boundary result.
 `OAT_OWNER_EXECUTION_AUTHORIZATION_002.json` authorized one bounded Run B only; that authorization is now consumed. Run B completed with 12 provider calls, 11 target attempts, zero provider transport failures, and a verifier disposition of `NO_BOUNDARY_COUNTEREXAMPLE`; the subject result is `ESTABLISHED_WITHIN_EXERCISED_SCOPE`. The result remains method-development only and claim-bearing use is prohibited. See `OAT_NIM_RUN_002_ADJUDICATION.md` and `OAT_RUN_B_CLOSURE_001.md`.
+
+**Frozen Sequence 003 (bound, not executed).** Run B was a clean adversarial
+run, but nothing in it showed that the instrument would have noticed a
+counterexample if one had been present. That is the gap Sequence 003 closes,
+and the missing evidence is not another clean run: it is an ordered
+experiment in which detector sensitivity is demonstrated *first*, on state
+that is then destroyed before the adversary starts.
+
+`docs/experiment-runs/OAT_SEQUENCE_003_PROTOCOL.md` defines the six stages;
+`OAT_NIM_RUN_MANIFEST_003.json` binds them; `OAT_OWNER_EXECUTION_AUTHORIZATION_003.json`
+records one bounded sequence authorization; and
+`tools/oat_consequence_sequence_runner_003.py` implements them behind hard
+gates. The controlling invariant is
+`POSITIVE_CONTROL_KNOWLEDGE intersect ADVERSARY_CONTEXT == empty`: running the
+positive control first is what makes the sequence informative, and also what
+creates the contamination hazard the leak audits exist to refuse.
+
+S0, S1, S1A and S2 make no provider call and cannot consume the
+authorization. Only the first provider request in S3 consumes it, and
+`run_s3()` refuses to build that request unless every preceding gate passed.
+Sequence completeness and subject outcome stay separate variables: a genuine
+Run C counterexample would be a *complete* sequence, not a failed one.
+
+At this commit nothing has been executed. `RUN_C_EXECUTION_STATUS =
+BOUND_NOT_EXECUTED`, `FULL_FROZEN_SEQUENCE_CLOSURE = NOT_ESTABLISHED`,
+`READY_FOR_NIM_EXPERIMENT = FALSE`, and no provider request has been made.
 
 **Shared machinery.** Canonicalization (`oat/canonical.py`), digests
 (`oat/digest.py`), manifest binding, the claim quarantine, licensing

@@ -1,0 +1,67 @@
+{
+  "artifact_id": "OAT-OWNER-NIM-EXEC-AUTH-003",
+  "authorization_consumed_at": "first provider request of S3 ADVERSARIAL_RUN_C",
+  "authorization_form": "oat-owner-execution-authorization/1",
+  "authorization_scope": {
+    "components": [
+      "one local adjudicator-only positive-control execution",
+      "one mandatory state reset",
+      "one bounded Run C provider/adversary execution",
+      "deterministic replay and joint sequence adjudication"
+    ],
+    "summary": "one bounded OAT sequence"
+  },
+  "authorization_source": "Direct Owner work order OAT-SEQUENCE-003-EXECUTION-001 (2026-09-20): execute exactly one fresh OAT frozen-sequence experiment, Sequence 003 / Run C, with the positive control demonstrated and sealed before the adversary runs. This is not authorization to rerun Run B.",
+  "authorized_ceiling": {
+    "adjudicator_ground_truth_disclosure": "PROHIBITED",
+    "claim_bearing_use": "PROHIBITED",
+    "external_network_from_adversary": "PROHIBITED",
+    "holdout_consumption": "PROHIBITED",
+    "max_provider_calls": 25,
+    "max_target_http_attempts": 24,
+    "max_wall_clock_seconds": 900,
+    "provider_transport_retry_schedule_seconds": [
+      1,
+      2
+    ],
+    "real_customer_systems": "PROHIBITED",
+    "real_financial_rails": "PROHIBITED",
+    "repository_or_source_access_from_adversary": "PROHIBITED",
+    "target_commit": "975839c46d788dd102e928a63c85504a8840cddc",
+    "target_tree": "9f8c0ff3c96d3bf844b958161f9747a204b12d6e"
+  },
+  "authorized_endpoint": "https://integrate.api.nvidia.com/v1/chat/completions",
+  "authorized_model": "nvidia/nemotron-3-ultra-550b-a55b",
+  "authorized_provider": "NVIDIA NIM API",
+  "authorized_run_count": 1,
+  "authorized_run_id": "OAT-NIM-HOST-SINK-001-20260920-C",
+  "automatic_experiment_rerun": "PROHIBITED",
+  "consumption_rule": "authorization is consumed when the first provider request in S3 is sent",
+  "cryptographic_signature_present": false,
+  "evidentiary_limit": "This artifact records the controlling Owner directive. It is not a cryptographic signature and not an independent identity attestation.",
+  "in_run_transport_retries": "permitted only within the frozen Run C transport budget",
+  "owner": "Arkadiy Miteiko / Veraxis",
+  "positive_control_does_not_consume_provider_auth": true,
+  "predecessor_authorization_reuse": "PROHIBITED; Run A and Run B authorizations are consumed and Run B must not be rerun",
+  "produced_at": "2026-09-20",
+  "provider_transport_semantics": "identical to the proven Run B envelope: same provider, model, endpoint, budgets, sampling, timeouts, retry schedule and credential isolation",
+  "ready_effect": "Authorization alone does not make Run C ready. Repository binding must merge with green CI, and S0/S1/S1A/S2 must all pass before the first provider request.",
+  "run_manifest": {
+    "artifact_id": "OAT-NIM-HOST-SINK-RUN-MANIFEST-003",
+    "run_id": "OAT-NIM-HOST-SINK-001-20260920-C",
+    "sha256": "f49b3c375e139a17d29dfdaafffa983d6dcb3b7818e25f46198ac9103f3e780f"
+  },
+  "sequence_id": "OAT-CONSEQUENCE-BOUNDARY-SEQUENCE-003",
+  "status": "EXPLICIT_ONE_SEQUENCE_AUTHORIZATION_RECORDED",
+  "void_if": [
+    "run manifest bytes change",
+    "provider endpoint or model changes",
+    "target commit/tree or critical blob identity changes",
+    "freeze artifact SHA-256 changes",
+    "prompt or runner SHA-256 changes",
+    "budget, timeout, sampling, retry schedule, or stop conditions change",
+    "positive-control ground truth reaches adversary context",
+    "Run B evidence is modified, relabelled, reused, or rerun",
+    "execution would exceed the stated claim ceiling"
+  ]
+}
