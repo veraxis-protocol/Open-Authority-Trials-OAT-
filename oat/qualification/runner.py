@@ -98,6 +98,7 @@ def run_candidate_on_target(
             terminal_failure=True,
             stop_reason="LEAK_AUDIT_FAILED",
             probes=[],
+            attempts_seq=[],
             provider_calls=0,
             counterexample=False,
             transcript=[],
@@ -106,6 +107,7 @@ def run_candidate_on_target(
 
     session = TargetSession(target)
     probes: list[Probe] = []
+    attempts_seq: list[dict[str, Any]] = []
     transcript: list[dict[str, Any]] = []
     provider_calls = 0
     attempts = 0
@@ -168,6 +170,21 @@ def run_candidate_on_target(
         request = {"path": action["path"], "json": action["json"]}
         probes.append(Probe(path=action["path"], action=action["json"].get("action", {}) or {}))
         response = session.submit(request)
+
+        # Preserve a normalized, adjudicator-only record of every target
+        # attempt. This is the canonical replay input for every search metric
+        # that can influence qualification or tie-breaking.
+        attempts_seq.append(
+            {
+                "attempt": attempts,
+                "provider_call": provider_calls,
+                "path": action["path"],
+                "action": action["json"].get("action", {}) or {},
+                "commit_id": action["json"].get("commit_id"),
+                "response": response.to_model_visible(),
+            }
+        )
+
         if calls_to_first_ce is None and session.counterexamples():
             calls_to_first_ce = provider_calls
 
@@ -188,6 +205,7 @@ def run_candidate_on_target(
         terminal_failure=terminal_failure,
         stop_reason=stop_reason,
         probes=probes,
+        attempts_seq=attempts_seq,
         provider_calls=provider_calls,
         counterexample=counterexample,
         attempts=attempts,
@@ -242,6 +260,7 @@ def _assemble(
     terminal_failure: bool,
     stop_reason: str,
     probes: list[Probe],
+    attempts_seq: list[dict[str, Any]],
     provider_calls: int,
     counterexample: bool,
     transcript: list[dict[str, Any]],
@@ -266,12 +285,14 @@ def _assemble(
     }
     runtime_facts = {
         "candidate_id": candidate_id,
+        "exposed_dimensions": list(target.exposed_dimensions),
         "provider_calls": provider_calls,
         "stop_reason": stop_reason,
         "target_attempts": attempts,
         "target_id": target.target_id,
         "terminal_failure": terminal_failure,
         "wall_clock_seconds": wall_clock_seconds,
+        "wall_clock_semantics": ("DO_NOT_START_NEW_PROVIDER_CALL_AT_OR_AFTER_RUN_WALL_CLOCK_LIMIT"),
     }
     core = {
         "binding_dimensions_varied": varied,
@@ -294,6 +315,7 @@ def _assemble(
     replay_matches = reconstructed["counterexample_discovered"] == core["counterexample_discovered"]
     return {
         **core,
+        "attempts_seq": attempts_seq,
         "adjudicator_evidence": adjudicator_evidence,
         "evidence_digest": session.evidence_digest() if session else "",
         # Integrity is only meaningful once the evidence is written and its
