@@ -87,7 +87,10 @@ class CandidateAggregate:
         return statistics.median(values) if values else float("inf")
 
     def replay_all_match(self) -> bool:
-        return all(replay_target(r) for r in self.results)
+        # The published result carries the evidence-derived replay verdict from
+        # the evidence store; a candidate cannot qualify if any pair's replay
+        # did not reproduce the final adjudication.
+        return all(bool(r.get("replay_matches_final")) for r in self.results)
 
     def evidence_integrity_all_pass(self) -> bool:
         return all(r["evidence_integrity"] == "PASS" for r in self.results)

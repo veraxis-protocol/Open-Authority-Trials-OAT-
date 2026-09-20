@@ -586,6 +586,7 @@ def test_frozen_manifest_matches_current_inputs() -> None:
         "generator": ROOT / "oat" / "qualification" / "synthetic_targets.py",
         "target_service": ROOT / "oat" / "qualification" / "target_service.py",
         "runner": ROOT / "oat" / "qualification" / "runner.py",
+        "evidence_store": ROOT / "oat" / "qualification" / "evidence_store.py",
         "leak_audit": ROOT / "oat" / "qualification" / "leak_audit.py",
         "probes": ROOT / "oat" / "qualification" / "probes.py",
         "selection": ROOT / "oat" / "qualification" / "selection.py",
