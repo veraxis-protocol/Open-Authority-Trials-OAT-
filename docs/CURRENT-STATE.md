@@ -20,9 +20,13 @@ REAL_ENTERPRISE_ALL_ROUTE_ASSURANCE         = NOT_ESTABLISHED
 EXPERIMENT_SURFACE_EVIDENCE_FREEZE         = FROZEN
 FREEZE_TARGET_COMMIT                        = 975839c46d788dd102e928a63c85504a8840cddc
 FREEZE_TARGET_TREE                          = 9f8c0ff3c96d3bf844b958161f9747a204b12d6e
-RUN_MANIFEST_ID                            = OAT-NIM-HOST-SINK-RUN-MANIFEST-001
+RUN_A_MANIFEST_ID                          = OAT-NIM-HOST-SINK-RUN-MANIFEST-001
+RUN_A_EXECUTION_STATUS                     = CONSUMED_HARNESS_OR_INSTRUMENT_FAILURE
+RUN_A_SUBJECT_RESULT                       = NOT_ESTABLISHED
+RUN_A_EMBEDDED_NEGATIVE_VERDICT            = INADMISSIBLE
+RUN_MANIFEST_ID                            = OAT-NIM-HOST-SINK-RUN-MANIFEST-002
 RUN_MANIFEST_COMPLETE                      = TRUE
-OWNER_EXECUTION_AUTHORIZATION              = OAT-OWNER-NIM-EXEC-AUTH-001
+OWNER_EXECUTION_AUTHORIZATION              = OAT-OWNER-NIM-EXEC-AUTH-002
 OWNER_EXECUTION_AUTHORIZATION_SCOPE        = ONE_BOUNDED_RUN
 PROVIDER_EXPERIMENT                         = AUTHORIZED_FOR_ONE_BOUNDED_RUN
 EXPERIMENT_EXECUTION_PARAMETERS             = BOUND
@@ -74,15 +78,15 @@ search budget, timeout and sampling parameters remain intentionally unbound.
 This freeze does not authorize a provider/NIM call, does not resume Experiment
 001, does not consume a holdout, and does not change the claim ceiling.
 
-**Bound one-run NIM execution manifest.**
-`docs/experiment-runs/OAT_NIM_RUN_MANIFEST_001.json` binds the exact NVIDIA
-NIM endpoint/model, provider-credential isolation, adversary-visible prompt
-and context, budgets, timeouts, sampling parameters, stop conditions, and
-evidence destinations. `OAT_OWNER_EXECUTION_AUTHORIZATION_001.json` records
-one bounded Owner-authorized execution only. The adjudicator-only positive
-control is not present in the adversary prompt or run manifest. The runner
-refuses execution if the frozen target, freeze digest, prompt, runner, or
-authorization binding does not match. This changes no claim-bearing ceiling.
+**Run A adjudication and Run B binding.**
+Run A consumed its one-run authorization but terminated after two provider
+HTTP 400 responses and before any target HTTP attempt. Its empty-state
+`NO_BOUNDARY_COUNTEREXAMPLE` is therefore inadmissible; the subject result is
+`NOT_ESTABLISHED`. See `OAT_NIM_RUN_001_ADJUDICATION.md`. Run B reuses the
+previously successful NVIDIA streaming request envelope, preserves the same
+frozen target and adversary prompt, and adds a fail-closed rule preventing
+provider failure or non-execution from becoming a negative boundary result.
+`OAT_OWNER_EXECUTION_AUTHORIZATION_002.json` authorizes one bounded Run B only.
 
 **Shared machinery.** Canonicalization (`oat/canonical.py`), digests
 (`oat/digest.py`), manifest binding, the claim quarantine, licensing
@@ -103,8 +107,10 @@ refuses loudly; `ScriptedTransport` replays fixed responses offline.
 
 ## What does not exist
 
-- Any frontier-model or provider adversary run. No provider call has been
-  made from this repository, and none is authorized.
+- Any successful frontier-model consequence-boundary adversary result. Run A
+  reached the provider but never reached the target; its subject result is
+  `NOT_ESTABLISHED`. Run B is separately authorized but is not executed by
+  the binding commit.
 - Any real customer target integration. The host/sink integration is a
   local, production-representative execution surface, not a deployment: the
   sink, authorization artifact, authority store and routes remain
@@ -112,7 +118,8 @@ refuses loudly; `ScriptedTransport` replays fixed responses offline.
   not real enterprise assurance.
 - Any all-route assurance claim about any real system.
 - Any claim-bearing result, standing, or certification of anything.
-- Experiment 001 execution. It remains stopped and is not resumed here.
+- Any claim-bearing Experiment 001 result. Run A was an unsuccessful
+  method-development execution attempt; Run B remains claim-bearing prohibited.
 
 ## Honest limits of a clean run
 
