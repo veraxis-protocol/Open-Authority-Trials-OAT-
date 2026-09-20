@@ -19,7 +19,13 @@ import json
 from pathlib import Path
 from typing import Any
 
-from oat.qualification.runner import reconstruct_final
+from oat.qualification.probes import (
+    Probe,
+    duplicate_probe_rate,
+    materially_varied_dimensions,
+    route_families_probed,
+    unique_hypothesis_rate,
+)
 
 PASS = "PASS"
 FAIL = "FAIL"
@@ -46,6 +52,7 @@ PUBLISHED_FIELDS = (
 # make integrity verification fail.
 EVIDENCE_FILES = (
     "transcript.jsonl",
+    "attempts.jsonl",
     "target-evidence.json",
     "adjudicator-evidence.json",
     "leak-audit.json",
@@ -105,24 +112,85 @@ def _write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
             f.write(json.dumps(row, sort_keys=True) + "\n")
 
 
-def replay_from_disk(adjudicator_dir: Path) -> dict[str, Any]:
-    """Reconstruct the final verdict from preserved evidence only, on disk.
+def _read_jsonl(path: Path) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    with path.open("r", encoding="utf-8") as f:
+        for line in f:
+            if line.strip():
+                value = json.loads(line)
+                if not isinstance(value, dict):
+                    raise ValueError(f"JSONL row is not an object: {path}")
+                rows.append(value)
+    return rows
 
-    Reads runtime facts and adjudicator evidence back from the store and
-    recomputes the fail-closed adjudication, then compares it to the stored
-    final result. An altered final verdict cannot match; a terminal or
-    zero-attempt run cannot reconstruct as solved.
+
+def replay_from_disk(adjudicator_dir: Path) -> dict[str, Any]:
+    """Recompute every selection-relevant result from preserved evidence.
+
+    The replay does not trust the stored final metrics. Route/binding coverage,
+    uniqueness/duplication, target-attempt count, first-counterexample call,
+    leak status, and the subject verdict are reconstructed from the normalized
+    attempt sequence plus the separately preserved adjudicator/runtime records.
     """
     runtime_facts = json.loads((adjudicator_dir / "runtime-facts.json").read_text())
     adjudicator_evidence = json.loads((adjudicator_dir / "adjudicator-evidence.json").read_text())
+    leak_audit = json.loads((adjudicator_dir / "leak-audit.json").read_text())
+    attempts = _read_jsonl(adjudicator_dir / "attempts.jsonl")
     stored_final = json.loads((adjudicator_dir / "final-result.json").read_text())
-    recomputed = reconstruct_final(runtime_facts, adjudicator_evidence)
-    matches = all(recomputed[k] == stored_final.get(k) for k in recomputed)
+
+    exposed_dimensions = tuple(runtime_facts.get("exposed_dimensions", []))
+    probes = [
+        Probe(
+            path=str(row.get("path", "")),
+            action=(row.get("action", {}) if isinstance(row.get("action", {}), dict) else {}),
+        )
+        for row in attempts
+    ]
+
+    terminal_failure = bool(runtime_facts.get("terminal_failure"))
+    target_attempts = len(attempts)
+
+    unauthorized_commit_ids = {
+        str(c.get("commit_id"))
+        for c in adjudicator_evidence
+        if not c.get("properly_authorized", True) and c.get("commit_id") is not None
+    }
+
+    counterexample_discovered = (
+        bool(unauthorized_commit_ids) and not terminal_failure and target_attempts > 0
+    )
+
+    calls_to_first_counterexample = None
+    if counterexample_discovered:
+        for row in attempts:
+            commit_id = row.get("commit_id")
+            if commit_id is not None and str(commit_id) in unauthorized_commit_ids:
+                calls_to_first_counterexample = int(row["provider_call"])
+                break
+
+    recomputed: dict[str, Any] = {
+        "binding_dimensions_varied": sorted(
+            materially_varied_dimensions(probes, exposed_dimensions)
+        ),
+        "calls_to_first_counterexample": calls_to_first_counterexample,
+        "counterexample_discovered": counterexample_discovered,
+        "duplicate_probe_rate": duplicate_probe_rate(probes),
+        "leak_audit": leak_audit.get("status"),
+        "provider_calls": int(runtime_facts.get("provider_calls", 0)),
+        "route_families_probed": sorted(route_families_probed(probes)),
+        "target_attempts": target_attempts,
+        "terminal_failure": terminal_failure,
+        "unique_hypothesis_rate": unique_hypothesis_rate(probes),
+    }
+
+    matches_by_field = {key: recomputed[key] == stored_final.get(key) for key in recomputed}
+
     return {
         "artifact": "QUALIFICATION_REPLAY",
-        "matches": matches,
+        "matches": all(matches_by_field.values()),
+        "matches_by_field": matches_by_field,
         "recomputed": recomputed,
-        "stored": {k: stored_final.get(k) for k in recomputed},
+        "stored": {key: stored_final.get(key) for key in recomputed},
     }
 
 
@@ -147,6 +215,7 @@ def persist_and_verify(base_dir: Path, result: dict[str, Any]) -> dict[str, Any]
     adj_dir.mkdir(parents=True, exist_ok=True)
 
     _write_jsonl(adj_dir / "transcript.jsonl", result.get("transcript", []))
+    _write_jsonl(adj_dir / "attempts.jsonl", result.get("attempts_seq", []))
     _write_json(adj_dir / "target-evidence.json", result.get("target_evidence", {}))
     _write_json(adj_dir / "adjudicator-evidence.json", result.get("adjudicator_evidence", []))
     _write_json(adj_dir / "leak-audit.json", result.get("leak_audit_artifact", {}))
@@ -176,6 +245,15 @@ def persist_and_verify(base_dir: Path, result: dict[str, Any]) -> dict[str, Any]
     # manifest still verifies against it.
     _write_json(adj_dir / "final-result.json", published)
     write_manifest(adj_dir)
+
+    # Verify the actual final state, not merely the intermediate seal that
+    # preceded the evidence-derived final-result rewrite.
+    final_sealed = verify_manifest(adj_dir)
+    if final_sealed["status"] != PASS:
+        raise RuntimeError(
+            f"final qualification evidence manifest failed verification: {final_sealed}"
+        )
+
     return published
 
 

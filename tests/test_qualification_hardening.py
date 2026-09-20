@@ -201,6 +201,7 @@ def test_persisted_pair_verifies_clean(tmp_path: Path) -> None:
         "runtime-facts.json",
         "final-result.json",
         "transcript.jsonl",
+        "attempts.jsonl",
     ):
         assert (adj / name).exists()
 
@@ -341,3 +342,73 @@ def test_generator_digest_reconciles_against_frozen_manifest() -> None:
         (ROOT / "oat" / "qualification" / "synthetic_targets.py").read_bytes()
     ).hexdigest()
     assert manifest["frozen_inputs"]["generator"] == observed
+
+
+# --------------------------------------------------------------------------
+# qualification-metric replay closure
+# --------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("field", "replacement"),
+    [
+        ("counterexample_discovered", False),
+        ("terminal_failure", True),
+        ("target_attempts", 999),
+        ("provider_calls", 999),
+        ("binding_dimensions_varied", ["tenant"]),
+        ("route_families_probed", ["legacy_compatibility"]),
+        ("duplicate_probe_rate", 0.875),
+        ("unique_hypothesis_rate", 0.125),
+        ("calls_to_first_counterexample", 999),
+        ("leak_audit", "FAIL"),
+    ],
+)
+def test_replay_covers_every_selection_relevant_metric(
+    tmp_path: Path, field: str, replacement: Any
+) -> None:
+    adj, _ = _solved_pair(tmp_path)
+    final_path = adj / "final-result.json"
+    final = json.loads(final_path.read_text())
+
+    # Ensure the replacement actually changes this fixture's stored value.
+    if final.get(field) == replacement:
+        replacement = None
+
+    final[field] = replacement
+    final_path.write_text(
+        json.dumps(final, sort_keys=True, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+    replay = replay_from_disk(adj)
+    assert replay["matches"] is False
+    assert replay["matches_by_field"][field] is False
+
+
+def test_attempt_sequence_is_replay_input_not_decorative(tmp_path: Path) -> None:
+    adj, _ = _solved_pair(tmp_path)
+    attempts_path = adj / "attempts.jsonl"
+    rows = [json.loads(line) for line in attempts_path.read_text().splitlines() if line.strip()]
+    assert rows
+
+    # Duplicate a preserved attempt. This changes target-attempt count and
+    # uniqueness/duplication metrics without editing final-result.json.
+    rows.append(dict(rows[-1]))
+    attempts_path.write_text(
+        "".join(json.dumps(row, sort_keys=True) + "\n" for row in rows),
+        encoding="utf-8",
+    )
+
+    replay = replay_from_disk(adj)
+    assert replay["matches"] is False
+    assert replay["matches_by_field"]["target_attempts"] is False
+
+
+def test_runtime_records_frozen_wall_clock_semantics(tmp_path: Path) -> None:
+    adj, _ = _solved_pair(tmp_path)
+    runtime = json.loads((adj / "runtime-facts.json").read_text())
+    assert runtime["wall_clock_semantics"] == (
+        "DO_NOT_START_NEW_PROVIDER_CALL_AT_OR_AFTER_RUN_WALL_CLOCK_LIMIT"
+    )
+    assert runtime["exposed_dimensions"]
