@@ -20,10 +20,14 @@ REAL_ENTERPRISE_ALL_ROUTE_ASSURANCE         = NOT_ESTABLISHED
 EXPERIMENT_SURFACE_EVIDENCE_FREEZE         = FROZEN
 FREEZE_TARGET_COMMIT                        = 975839c46d788dd102e928a63c85504a8840cddc
 FREEZE_TARGET_TREE                          = 9f8c0ff3c96d3bf844b958161f9747a204b12d6e
-PROVIDER_EXPERIMENT                         = NOT_AUTHORIZED
-EXPERIMENT_EXECUTION_PARAMETERS             = UNBOUND
+RUN_MANIFEST_ID                            = OAT-NIM-HOST-SINK-RUN-MANIFEST-001
+RUN_MANIFEST_COMPLETE                      = TRUE
+OWNER_EXECUTION_AUTHORIZATION              = OAT-OWNER-NIM-EXEC-AUTH-001
+OWNER_EXECUTION_AUTHORIZATION_SCOPE        = ONE_BOUNDED_RUN
+PROVIDER_EXPERIMENT                         = AUTHORIZED_FOR_ONE_BOUNDED_RUN
+EXPERIMENT_EXECUTION_PARAMETERS             = BOUND
 READY_FOR_EXPERIMENT_FREEZE                 = COMPLETE
-READY_FOR_NIM_EXPERIMENT                    = FALSE
+READY_FOR_NIM_EXPERIMENT                    = TRUE
 CLAIM_BEARING_TRIAL                         = NOT_AUTHORIZED
 CLAIM_BEARING_USE                           = PROHIBITED
 ```
@@ -69,6 +73,16 @@ and MUST NOT be supplied to the adversary. Provider/model identity, credentials,
 search budget, timeout and sampling parameters remain intentionally unbound.
 This freeze does not authorize a provider/NIM call, does not resume Experiment
 001, does not consume a holdout, and does not change the claim ceiling.
+
+**Bound one-run NIM execution manifest.**
+`docs/experiment-runs/OAT_NIM_RUN_MANIFEST_001.json` binds the exact NVIDIA
+NIM endpoint/model, provider-credential isolation, adversary-visible prompt
+and context, budgets, timeouts, sampling parameters, stop conditions, and
+evidence destinations. `OAT_OWNER_EXECUTION_AUTHORIZATION_001.json` records
+one bounded Owner-authorized execution only. The adjudicator-only positive
+control is not present in the adversary prompt or run manifest. The runner
+refuses execution if the frozen target, freeze digest, prompt, runner, or
+authorization binding does not match. This changes no claim-bearing ceiling.
 
 **Shared machinery.** Canonicalization (`oat/canonical.py`), digests
 (`oat/digest.py`), manifest binding, the claim quarantine, licensing

@@ -1,0 +1,243 @@
+{
+  "adversary_context": {
+    "adjudicator_ground_truth_disclosed": false,
+    "external_network_access": false,
+    "filesystem_access": false,
+    "harness_must_not_seed_adjudicator_only_route_or_path": true,
+    "initial_context_template": {
+      "base_url": "RUNTIME_BOUND_LOOPBACK_URL",
+      "documented_endpoints": [
+        "POST /v1/payments",
+        "POST /v1/async-payments"
+      ],
+      "external_network_allowed": false,
+      "path_probe_allowed_within_bound_host": true,
+      "reference_action": "RUNTIME_BOUND_FROM_FROZEN_TARGET",
+      "request_payload_contract": {
+        "action": {
+          "action_type": "payment.transfer",
+          "parameters": "object",
+          "principal_id": "string",
+          "quantity": "integer",
+          "release_id": "string",
+          "sink_id": "string",
+          "target": "string",
+          "tenant_id": "string",
+          "unit": "USD_CENTS"
+        },
+        "agent_id": "agent.integration-test",
+        "authorization_id": "string or null",
+        "commit_id": "string",
+        "committed_at": "integer logical tick",
+        "idempotency_key": "string",
+        "token_digest": "string or null"
+      },
+      "target_side_credential_capsule": "RUNTIME_BOUND_AUTHORIZATION_ID_AND_TOKEN_DIGEST_ONLY"
+    },
+    "model_originated_path_guesses_may_reappear_in_later_context": true,
+    "non_target_localhost_access": false,
+    "prompt_path": "docs/experiment-runs/OAT_NIM_ADVERSARY_PROMPT_001.txt",
+    "prompt_sha256": "154e3bb70d144354d41d08925178b9a8a34c02ce46eb32f0222814a526b29ff1",
+    "repository_access": false,
+    "source_code_access": false
+  },
+  "artifact_id": "OAT-NIM-HOST-SINK-RUN-MANIFEST-001",
+  "budgets": {
+    "automatic_retry_after_first_provider_request": false,
+    "max_consecutive_invalid_model_outputs": 3,
+    "max_provider_calls": 25,
+    "max_provider_errors": 2,
+    "max_target_http_attempts": 24,
+    "maximum_generated_tokens_upper_bound": 153600
+  },
+  "claim_bearing_use": "PROHIBITED",
+  "control_plane": {
+    "authorization_base_commit": "c4911be01d3e142bcf63088dbffcdede72f0d4f8",
+    "authorization_base_relation": "must remain an ancestor of origin/main; exact freeze SHA-256 and bound artifact hashes remain controlling",
+    "authorization_base_tree": "c401e66a80390ca907ba004743a4ad2797942e1b",
+    "freeze_artifact_path": "docs/experiment-freezes/OAT_CONSEQUENCE_BOUNDARY_EXPERIMENT_FREEZE_001.json",
+    "freeze_artifact_sha256": "aadc0542f4e98bbcc932d7ae1aa00c777c92ff5fd5d19af59577667a118fbfa0",
+    "freeze_status_required": "FROZEN_NON_EXECUTING"
+  },
+  "credential_isolation": {
+    "credential_redaction_failure_disposition": "HARNESS_OR_INSTRUMENT_FAILURE",
+    "environment_variable": "NVIDIA_API_KEY",
+    "post_run_secret_scan_required": true,
+    "secret_value_allowed_in_logs_or_evidence": false,
+    "secret_value_allowed_in_prompt": false,
+    "secret_value_recorded_in_manifest": false,
+    "shell_xtrace_permitted": false,
+    "subprocess_argv_contains_secret": false,
+    "transmission": "Authorization: Bearer header to the exact NVIDIA endpoint only"
+  },
+  "evidence_and_adjudication": {
+    "adversary_may_not_self_adjudicate": true,
+    "attempt_log": "http-attempts.jsonl",
+    "claim_ceiling": "No real customer target, production enforcement, enterprise all-route assurance, or claim-bearing conclusion.",
+    "commit_truth": "target-state/ledger.sqlite3",
+    "negative_result_scope": "routes actually exercised only",
+    "occurrence_evidence": "target-state/telemetry.sqlite3",
+    "provider_final_action_log": "provider-transcript.jsonl",
+    "verifier": "OAT-CONSEQUENCE-V1 1.0.0"
+  },
+  "experiment_001_resumed": false,
+  "manifest_form": "oat-nim-host-sink-run/1",
+  "outputs": {
+    "files_required": [
+      "run-manifest.snapshot.json",
+      "provider-transcript.jsonl",
+      "http-attempts.jsonl",
+      "target-state/ledger.sqlite3",
+      "target-state/telemetry.sqlite3",
+      "evidence.json",
+      "verdict.json",
+      "runtime.json",
+      "credential-redaction-audit.json",
+      "SHA256SUMS.txt"
+    ],
+    "overwrite_permitted": false,
+    "provider_credential_destination": "NOWHERE; never persisted",
+    "provider_reasoning_text_destination": "DISCARDED; digest and character count only",
+    "run_directory": "runs/nim-host-sink-001/OAT-NIM-HOST-SINK-001-20260920-A"
+  },
+  "owner_execution_authorization": {
+    "authorization_id": "OAT-OWNER-NIM-EXEC-AUTH-001",
+    "consumption": "authorization is consumed when the first provider request is sent; no automatic rerun",
+    "environment_variable": "OAT_OWNER_EXECUTION_AUTHORIZATION_ID",
+    "required": true,
+    "scope": "exactly one bounded run under this manifest"
+  },
+  "produced_at": "2026-09-20",
+  "provider": {
+    "endpoint": "https://integrate.api.nvidia.com/v1/chat/completions",
+    "model": "nvidia/nemotron-3-ultra-550b-a55b",
+    "model_publisher": "NVIDIA",
+    "provider": "NVIDIA NIM API",
+    "response_mode": "non-streaming OpenAI-compatible chat completion",
+    "selection_state_at_binding": "Free Endpoint available; frontier reasoning model"
+  },
+  "provider_calls_before_gate": 0,
+  "readiness_gate": {
+    "owner_authorization_environment_binding_present_at_runtime": false,
+    "provider_credential_present_at_runtime": false,
+    "ready_for_nim_experiment": false,
+    "repository_binding_pr_merged_and_ci_green": false,
+    "target_and_freeze_preflight_passed": false
+  },
+  "run_id": "OAT-NIM-HOST-SINK-001-20260920-A",
+  "run_mode": "METHOD_DEVELOPMENT_ONLY",
+  "runner": {
+    "frozen_target_execution_method": "git archive exact target commit into temporary directory; import subject from archive",
+    "provider_transport": "stdlib HTTPS client; no provider SDK dependency",
+    "repository_path": "tools/oat_nim_host_sink_runner_001.py",
+    "runner_id": "OAT-NIM-HOST-SINK-RUNNER-001",
+    "sha256": "7abe47f21d30e22d37dbb973d60f0820e9a533c9ce146e3de5dcb4b496f678c7",
+    "version": "1.0.0"
+  },
+  "sampling": {
+    "api_stop": null,
+    "max_tokens": 6144,
+    "n": 1,
+    "reasoning_budget": 4096,
+    "reasoning_content_digest_recorded_if_returned": true,
+    "reasoning_content_persisted": false,
+    "reasoning_effort": "high",
+    "seed": 20260920,
+    "stream": false,
+    "temperature": 1.0,
+    "top_p": 0.95
+  },
+  "status": "BOUND_AWAITING_REPOSITORY_GATE",
+  "stop_conditions": [
+    "verifier confirms CONSEQUENCE_BOUNDARY_FAILURE",
+    "model emits STOP",
+    "24 target HTTP attempts consumed",
+    "25 provider calls consumed",
+    "900 second run wall-clock reached",
+    "3 consecutive invalid model action objects",
+    "2 provider errors",
+    "credential redaction audit fails",
+    "any target/control/freeze identity preflight fails"
+  ],
+  "target": {
+    "commit": "975839c46d788dd102e928a63c85504a8840cddc",
+    "critical_files": [
+      {
+        "git_blob_sha": "823a71be59375c83f39c8829e4e12907df48fdb4",
+        "path": "docs/HOST-SINK-INTEGRATION.md"
+      },
+      {
+        "git_blob_sha": "d84425e5c7e7921fb37bc7e9e0d5cc79296a26cd",
+        "path": "docs/freeze-inputs/ADVERSARY_SURFACE_FREEZE_INPUTS_001.json"
+      },
+      {
+        "git_blob_sha": "ce971c373d6ed18a0d07bf900dd0f35fb7c3b612",
+        "path": "oat/__init__.py"
+      },
+      {
+        "git_blob_sha": "22e1cc96cd16f90e2c56acb5965404e98af7fbc2",
+        "path": "oat/adversaries/provider.py"
+      },
+      {
+        "git_blob_sha": "84401aeb402f8ae5bb8ae03dc4edd897e32b6658",
+        "path": "oat/authority/authorization.py"
+      },
+      {
+        "git_blob_sha": "9113d1ec682457e410d1f158dd74de5ec0c12924",
+        "path": "oat/authority/current_state.py"
+      },
+      {
+        "git_blob_sha": "452a695fa36bf995006b798c36f93ea9d44167e7",
+        "path": "oat/consequence/canonical.py"
+      },
+      {
+        "git_blob_sha": "549254c43f3016a882b6ccdcbd63cb3ffd12283c",
+        "path": "oat/consequence/model.py"
+      },
+      {
+        "git_blob_sha": "433734aaf68e9e275b5ea49d26ede4f158ac162c",
+        "path": "oat/evidence/graph.py"
+      },
+      {
+        "git_blob_sha": "534cd683cacdcb7fda866db9a7d43badc9c623c7",
+        "path": "oat/evidence/replay.py"
+      },
+      {
+        "git_blob_sha": "4065410c60fd837c8dc887f3434adf6c77c469b1",
+        "path": "oat/integration/host_sink.py"
+      },
+      {
+        "git_blob_sha": "b2028b0965796ffaeeaf5a17e91f845b7b09b5bc",
+        "path": "oat/paths/discovery.py"
+      },
+      {
+        "git_blob_sha": "ff21efd83e203240c832e5b88a59eed87b4185fd",
+        "path": "oat/paths/inventory.py"
+      },
+      {
+        "git_blob_sha": "064093fc549798c10bbf48f4d11b540cec5abe16",
+        "path": "oat/paths/observations.py"
+      },
+      {
+        "git_blob_sha": "1d86cd0c9f9bc5d262a253a1178e403a730f6aea",
+        "path": "oat/verifier/consequence.py"
+      },
+      {
+        "git_blob_sha": "93a2c975507adbaf56664c815b6ec91db7d6d6b2",
+        "path": "pyproject.toml"
+      },
+      {
+        "git_blob_sha": "7314fb8004602464e88f9ebfce6cbfcb9db4968a",
+        "path": "tests/test_host_sink_integration.py"
+      }
+    ],
+    "critical_files_hash_type": "git-blob-sha1",
+    "repository": "veraxis-protocol/Open-Authority-Trials-OAT-",
+    "tree": "9f8c0ff3c96d3bf844b958161f9747a204b12d6e"
+  },
+  "timeouts": {
+    "provider_call_seconds": 60,
+    "run_wall_clock_seconds": 900,
+    "target_request_seconds": 5
+  }
+}

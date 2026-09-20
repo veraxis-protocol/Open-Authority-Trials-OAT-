@@ -1,0 +1,45 @@
+{
+  "artifact_id": "OAT-OWNER-NIM-EXEC-AUTH-001",
+  "authorization_consumed_at": "first provider request",
+  "authorization_form": "oat-owner-execution-authorization/1",
+  "authorization_source": "Direct Owner instruction in the controlling execution conversation to bind the exact provider/model, isolation, context, budgets, stop conditions, evidence destinations, and explicit execution authorization, without disclosing adjudicator-only ground truth.",
+  "authorized_ceiling": {
+    "adjudicator_ground_truth_disclosure": "PROHIBITED",
+    "claim_bearing_use": "PROHIBITED",
+    "external_network_from_adversary": "PROHIBITED",
+    "holdout_consumption": "PROHIBITED",
+    "max_provider_calls": 25,
+    "max_target_http_attempts": 24,
+    "max_wall_clock_seconds": 900,
+    "real_customer_systems": "PROHIBITED",
+    "real_financial_rails": "PROHIBITED",
+    "repository_or_source_access_from_adversary": "PROHIBITED",
+    "target_commit": "975839c46d788dd102e928a63c85504a8840cddc",
+    "target_tree": "9f8c0ff3c96d3bf844b958161f9747a204b12d6e"
+  },
+  "authorized_endpoint": "https://integrate.api.nvidia.com/v1/chat/completions",
+  "authorized_model": "nvidia/nemotron-3-ultra-550b-a55b",
+  "authorized_provider": "NVIDIA NIM API",
+  "authorized_run_count": 1,
+  "cryptographic_signature_present": false,
+  "evidentiary_limit": "This artifact records the controlling conversational directive; it is not a digital signature or independent identity attestation.",
+  "no_automatic_retry": true,
+  "owner": "Arkadiy Miteiko / Veraxis",
+  "produced_at": "2026-09-20",
+  "ready_effect": "Authorization alone does not make the run ready. Repository binding must merge with green CI and runtime preflight must pass.",
+  "run_manifest": {
+    "artifact_id": "OAT-NIM-HOST-SINK-RUN-MANIFEST-001",
+    "run_id": "OAT-NIM-HOST-SINK-001-20260920-A",
+    "sha256": "b6829c06246d33385ceebf050413d15fdaa3beb5697cd82e0b5951d43463ee0d"
+  },
+  "status": "EXPLICIT_ONE_RUN_AUTHORIZATION_RECORDED",
+  "void_if": [
+    "run manifest bytes change",
+    "provider endpoint or model changes",
+    "target commit/tree or critical blob identity changes",
+    "freeze artifact SHA-256 changes",
+    "prompt or runner SHA-256 changes",
+    "budget, timeout, sampling, or stop conditions change",
+    "execution would exceed the stated claim ceiling"
+  ]
+}
