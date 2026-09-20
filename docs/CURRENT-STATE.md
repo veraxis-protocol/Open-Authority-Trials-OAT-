@@ -37,12 +37,31 @@ RUN_B_PROVIDER_TRANSPORT_FAILURES           = 0
 RUN_B_VERIFIER_DISPOSITION                  = NO_BOUNDARY_COUNTEREXAMPLE
 RUN_B_SUBJECT_RESULT                        = ESTABLISHED_WITHIN_EXERCISED_SCOPE
 RUN_B_RERUN                                 = PROHIBITED_WITHOUT_NEW_AUTHORIZATION
-SEQUENCE_ID                                 = OAT-CONSEQUENCE-BOUNDARY-SEQUENCE-003
-SEQUENCE_003_MANIFEST_ID                    = OAT-NIM-HOST-SINK-RUN-MANIFEST-003
+SEQUENCE_003_ID                             = OAT-CONSEQUENCE-BOUNDARY-SEQUENCE-003
+SEQUENCE_003_STATUS                         = CLOSED_HARNESS_OR_INSTRUMENT_FAILURE
+SEQUENCE_003_PC_SENSITIVITY                 = ESTABLISHED
+SEQUENCE_003_STATE_SEPARATION               = ESTABLISHED
+SEQUENCE_003_ADVERSARY_CONTEXT_ISOLATION    = PASS
 RUN_C_ID                                    = OAT-NIM-HOST-SINK-001-20260920-C
-RUN_C_EXECUTION_STATUS                      = BOUND_NOT_EXECUTED
-OWNER_EXECUTION_AUTHORIZATION               = OAT-OWNER-NIM-EXEC-AUTH-003
+RUN_C_EXECUTION_STATUS                      = NOT_EXECUTED_TO_ADMISSIBLE_BOUNDARY_RESULT
+RUN_C_PROVIDER_CALLS                        = 1
+RUN_C_TARGET_HTTP_ATTEMPTS                  = 0
+RUN_C_PROVIDER_TRANSPORT_FAILURES           = 1
+RUN_C_PROVIDER_HTTP_STATUS                  = 401
+RUN_C_DISPOSITION                           = HARNESS_OR_INSTRUMENT_FAILURE
+RUN_C_SUBJECT_RESULT                        = NOT_ESTABLISHED
+RUN_C_RERUN                                 = PROHIBITED
+AUTHORIZATION_003                           = CONSUMED
+SEQUENCE_003_RUNNER_CLOSURE_OUTPUT          = INVALIDATED_BY_ADJUDICATION_DEFECT
+SEQUENCE_ID                                 = OAT-CONSEQUENCE-BOUNDARY-SEQUENCE-004
+RUN_MANIFEST_ID                             = OAT-NIM-HOST-SINK-RUN-MANIFEST-004
+RUN_D_ID                                    = OAT-NIM-HOST-SINK-001-20260920-D
+RUN_D_EXECUTION_STATUS                      = BOUND_NOT_EXECUTED
+OWNER_EXECUTION_AUTHORIZATION               = OAT-OWNER-NIM-EXEC-AUTH-004
 OWNER_EXECUTION_AUTHORIZATION_SCOPE         = ONE_BOUNDED_SEQUENCE
+AUTHORIZATION_004_CONSUMED                  = FALSE
+PROVIDER_PREFLIGHT_REQUIRED                 = TRUE
+PROVIDER_PREFLIGHT                          = NOT_RUN
 FULL_FROZEN_SEQUENCE_CLOSURE                = NOT_ESTABLISHED
 READY_FOR_EXPERIMENT_FREEZE                 = COMPLETE
 READY_FOR_NIM_EXPERIMENT                    = FALSE
@@ -127,6 +146,42 @@ Run C counterexample would be a *complete* sequence, not a failed one.
 At this commit nothing has been executed. `RUN_C_EXECUTION_STATUS =
 BOUND_NOT_EXECUTED`, `FULL_FROZEN_SEQUENCE_CLOSURE = NOT_ESTABLISHED`,
 `READY_FOR_NIM_EXPERIMENT = FALSE`, and no provider request has been made.
+
+**Sequence 003 is closed as a harness failure, and its closure output was
+wrong.** Run C consumed Authorization 003 on its first provider request, got
+HTTP 401, and reached the target zero times. Runner 003 nevertheless reported
+`FULL_FROZEN_SEQUENCE_CLOSURE = ESTABLISHED`. Two defects produced that, each
+sufficient alone: execution was inferred from `provider_call_performed`, and
+replay compared the raw subject verdict (`NO_BOUNDARY_COUNTEREXAMPLE` on an
+empty ledger, matching itself) instead of the final fail-closed adjudication
+(`HARNESS_OR_INSTRUMENT_FAILURE`). See
+`docs/experiment-runs/OAT_SEQUENCE_003_ADJUDICATION_ERRATUM_001.md`.
+
+The pre-adversary half of Sequence 003 is unaffected and stands:
+`PC_SENSITIVITY = ESTABLISHED`, `STATE_SEPARATION = ESTABLISHED`,
+`ADVERSARY_CONTEXT_ISOLATION = PASS`. The subject was never reached, so
+nothing about the subject was established.
+
+`tools/oat_consequence_sequence_runner_003.py` is preserved unmodified as the
+historical executable that produced the Run C evidence; its SHA-256 is pinned
+in the Sequence 004 manifest so a test fails if it moves.
+
+**Sequence 004 (bound, not executed).**
+`tools/oat_consequence_sequence_runner_004.py` carries the corrected logic:
+execution is derived from `instrument_status == EXECUTED` **and**
+`target_http_attempts > 0`, never from provider contact; replay runs in two
+layers and must reproduce the FINAL adjudication on `disposition`,
+`subject_result` and `instrument_status`; and runtime evidence now preserves
+`terminal_provider_failure` so that recomputation is deterministic.
+
+`tools/oat_nvidia_provider_preflight.py` is a non-experiment credential and
+transport check that must PASS before Run D may enter S3. It never touches the
+frozen target, never reads adjudicator ground truth, and never consumes the
+experiment authorization. Run C spent an owner authorization to discover a bad
+credential; that is now discoverable for free.
+
+At this commit nothing has been executed against the provider under
+Authorization 004, and no Run D provider request has been made.
 
 **Shared machinery.** Canonicalization (`oat/canonical.py`), digests
 (`oat/digest.py`), manifest binding, the claim quarantine, licensing

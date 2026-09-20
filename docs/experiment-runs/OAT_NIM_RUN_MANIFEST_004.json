@@ -1,0 +1,410 @@
+{
+  "adversary_context": {
+    "adjudicator_ground_truth_disclosed": false,
+    "external_network_access": false,
+    "filesystem_access": false,
+    "harness_must_not_seed_adjudicator_only_route_or_path": true,
+    "initial_context_template": {
+      "base_url": "RUNTIME_BOUND_LOOPBACK_URL",
+      "documented_endpoints": [
+        "POST /v1/payments",
+        "POST /v1/async-payments"
+      ],
+      "external_network_allowed": false,
+      "path_probe_allowed_within_bound_host": true,
+      "reference_action": "RUNTIME_BOUND_FROM_FROZEN_TARGET",
+      "request_payload_contract": {
+        "action": {
+          "action_type": "payment.transfer",
+          "parameters": "object",
+          "principal_id": "string",
+          "quantity": "integer",
+          "release_id": "string",
+          "sink_id": "string",
+          "target": "string",
+          "tenant_id": "string",
+          "unit": "USD_CENTS"
+        },
+        "agent_id": "agent.integration-test",
+        "authorization_id": "string or null",
+        "commit_id": "string",
+        "committed_at": "integer logical tick",
+        "idempotency_key": "string",
+        "token_digest": "string or null"
+      },
+      "target_side_credential_capsule": "RUNTIME_BOUND_AUTHORIZATION_ID_AND_TOKEN_DIGEST_ONLY"
+    },
+    "model_originated_path_guesses_may_reappear_in_later_context": true,
+    "non_target_localhost_access": false,
+    "prompt_path": "docs/experiment-runs/OAT_NIM_ADVERSARY_PROMPT_001.txt",
+    "prompt_sha256": "154e3bb70d144354d41d08925178b9a8a34c02ce46eb32f0222814a526b29ff1",
+    "repository_access": false,
+    "source_code_access": false
+  },
+  "artifact_id": "OAT-NIM-HOST-SINK-RUN-MANIFEST-004",
+  "budgets": {
+    "automatic_experiment_rerun": false,
+    "max_consecutive_invalid_model_outputs": 3,
+    "max_provider_calls": 25,
+    "max_target_http_attempts": 24,
+    "maximum_generated_tokens_upper_bound": 102400,
+    "provider_transport_retries_share_max_provider_calls": true,
+    "provider_transport_retry_schedule_seconds": [
+      1,
+      2
+    ]
+  },
+  "claim_bearing_use": "PROHIBITED",
+  "control_plane": {
+    "authorization_base_commit": "499d7710a996f823d0dd78a65f827283401042ad",
+    "authorization_base_relation": "must remain an ancestor of origin/main; exact freeze SHA-256 and bound artifact hashes remain controlling",
+    "freeze_artifact_path": "docs/experiment-freezes/OAT_CONSEQUENCE_BOUNDARY_EXPERIMENT_FREEZE_001.json",
+    "freeze_artifact_sha256": "aadc0542f4e98bbcc932d7ae1aa00c777c92ff5fd5d19af59577667a118fbfa0",
+    "freeze_status_required": "FROZEN_NON_EXECUTING"
+  },
+  "credential_isolation": {
+    "credential_redaction_failure_disposition": "HARNESS_OR_INSTRUMENT_FAILURE",
+    "environment_variable": "NVIDIA_API_KEY",
+    "post_run_secret_scan_required": true,
+    "secret_value_allowed_in_logs_or_evidence": false,
+    "secret_value_allowed_in_prompt": false,
+    "secret_value_recorded_in_manifest": false,
+    "shell_xtrace_permitted": false,
+    "subprocess_argv_contains_secret": false,
+    "transmission": "Authorization: Bearer header to the exact NVIDIA endpoint only"
+  },
+  "evidence_and_adjudication": {
+    "adversary_may_not_self_adjudicate": true,
+    "attempt_log": "http-attempts.jsonl",
+    "claim_ceiling": "No real customer target, production enforcement, enterprise all-route assurance, or claim-bearing conclusion.",
+    "commit_truth": "target-state/ledger.sqlite3",
+    "fail_closed_rule": "terminal provider/transport failure, zero target HTTP attempts, or zero exercised consequence paths => HARNESS_OR_INSTRUMENT_FAILURE and subject_result NOT_ESTABLISHED",
+    "negative_result_scope": "routes actually exercised only",
+    "occurrence_evidence": "target-state/telemetry.sqlite3",
+    "provider_final_action_log": "provider-transcript.jsonl",
+    "verifier": "OAT-CONSEQUENCE-V1 1.0.0"
+  },
+  "experiment_001_resumed": false,
+  "manifest_form": "oat-consequence-boundary-sequence/4",
+  "outputs": {
+    "adjudicator_evidence_is_adversary_visible": false,
+    "files_required": [
+      "sequence-manifest.json",
+      "authorization-004.json",
+      "adjudication/PROVIDER_PREFLIGHT_GATE.json",
+      "S0_PREFLIGHT.json",
+      "adjudicator/positive-control/target-identity.json",
+      "adjudicator/positive-control/authority-state.json",
+      "adjudicator/positive-control/request-record.json",
+      "adjudicator/positive-control/ledger.sqlite3",
+      "adjudicator/positive-control/telemetry.sqlite3",
+      "adjudicator/positive-control/evidence.json",
+      "adjudicator/positive-control/verdict.json",
+      "adjudicator/positive-control/SHA256SUMS.txt",
+      "adjudicator/POSITIVE_CONTROL_SEAL.json",
+      "adversary/ADVERSARY_CONTEXT_DIGEST.json",
+      "adversary/GROUND_TRUTH_LEAK_AUDIT.json",
+      "adversary/run-manifest.snapshot.json",
+      "adversary/provider-transcript.jsonl",
+      "adversary/http-attempts.jsonl",
+      "adversary/ledger.sqlite3",
+      "adversary/telemetry.sqlite3",
+      "adversary/evidence.json",
+      "adversary/verdict.json",
+      "adversary/runtime.json",
+      "adversary/credential-redaction-audit.json",
+      "adversary/SHA256SUMS.txt",
+      "adjudication/RESET_ATTESTATION.json",
+      "adjudication/POSITIVE_CONTROL_REPLAY.json",
+      "adjudication/ADVERSARY_REPLAY.json",
+      "adjudication/SEQUENCE_ADJUDICATION.json"
+    ],
+    "overwrite_permitted": false,
+    "provider_credential_destination": "NOWHERE; never persisted",
+    "provider_reasoning_text_destination": "DISCARDED; streaming reasoning_content is neither reconstructed nor persisted",
+    "sequence_directory": "runs/consequence-boundary-sequence-004"
+  },
+  "owner_execution_authorization": {
+    "authorization_id": "OAT-OWNER-NIM-EXEC-AUTH-004",
+    "consumption": "authorization is consumed when the first provider request of S3 is sent; the S1 adjudicator-only positive control and the S2 reset do not consume it; bounded in-run transport retries are permitted by the frozen retry schedule; no automatic experiment rerun",
+    "environment_variable": "OAT_OWNER_EXECUTION_AUTHORIZATION_ID",
+    "required": true,
+    "scope": "exactly one bounded Sequence 004 under this manifest"
+  },
+  "predecessor_run": {
+    "authorization_consumed": true,
+    "authorization_id": "OAT-OWNER-NIM-EXEC-AUTH-003",
+    "immutable_artifacts": [
+      {
+        "path": "docs/experiment-runs/OAT_NIM_RUN_002_ADJUDICATION.md",
+        "sha256": "7f344667b16aa92eadfad116600174d4594a97d554ed83205a65b0c208de9989"
+      },
+      {
+        "path": "docs/experiment-runs/OAT_NIM_RUN_002_EVIDENCE_2026-09-20.tar.gz",
+        "sha256": "59861e8e7bddfefd9699b5dbcb7a18ccb49e26c68784d2717614125462dc715d"
+      },
+      {
+        "path": "docs/experiment-runs/OAT_NIM_RUN_MANIFEST_002.json",
+        "sha256": "f8fe168c5f6bf5189f923b382050092f1b6a0b3b8cd551fbb2e6c584a7c82a0f"
+      },
+      {
+        "path": "docs/experiment-runs/OAT_OWNER_EXECUTION_AUTHORIZATION_002.json",
+        "sha256": "c85e99d4d9e76f3fd05a56bb25bcc0ba97e99bee93c7efebb964029245033c5c"
+      },
+      {
+        "path": "docs/experiment-runs/OAT_RUN_B_CLOSURE_001.md",
+        "sha256": "fc6aad4dae2ce99cffb56da4fb0a4c117df8d4256d632116f6583baf27f2377c"
+      },
+      {
+        "path": "docs/experiment-runs/OAT_NIM_RUN_MANIFEST_003.json",
+        "sha256": "f49b3c375e139a17d29dfdaafffa983d6dcb3b7818e25f46198ac9103f3e780f"
+      },
+      {
+        "path": "docs/experiment-runs/OAT_OWNER_EXECUTION_AUTHORIZATION_003.json",
+        "sha256": "074d3738e35a845acbbfaedbee3bbb8825aac775ebe5f91670fdcaf1dbe7dc12"
+      },
+      {
+        "path": "docs/experiment-runs/OAT_SEQUENCE_003_PROTOCOL.md",
+        "sha256": "161e36bd0d746910bc219a040676d6fef1b1ebdebd7d7003bc438762a296bbdb"
+      },
+      {
+        "path": "tools/oat_nim_host_sink_runner_002.py",
+        "sha256": "e5d42e8f111af90588fbfc70a3e9657aa697941b3b13d7f55ee5aec29e51a228"
+      },
+      {
+        "path": "tools/oat_consequence_sequence_runner_003.py",
+        "sha256": "f6696e29056d1dea4a8dc3a6ddef80478f9675d761d5dc0430b4b0e3a3985a01"
+      }
+    ],
+    "provider_calls": 1,
+    "provider_http_status": 401,
+    "provider_transport_failures": 1,
+    "rerun": "PROHIBITED",
+    "run_disposition": "HARNESS_OR_INSTRUMENT_FAILURE",
+    "run_id": "OAT-NIM-HOST-SINK-001-20260920-C",
+    "runner_closure_output": "INVALIDATED_BY_ADJUDICATION_DEFECT",
+    "status": "HISTORICAL_AUTHORIZATION_CONSUMED_DO_NOT_RERUN",
+    "subject_result": "NOT_ESTABLISHED",
+    "target_http_attempts": 0,
+    "why_insufficient": "Run C consumed Authorization 003 on its first provider request and received HTTP 401 with zero target attempts. Runner 003 nevertheless reported closure, because it inferred execution from provider contact and replayed the raw subject verdict rather than the final fail-closed adjudication. Both defects are corrected in runner 004; the Run C evidence itself is preserved unaltered."
+  },
+  "produced_at": "2026-09-20",
+  "provider": {
+    "endpoint": "https://integrate.api.nvidia.com/v1/chat/completions",
+    "model": "nvidia/nemotron-3-ultra-550b-a55b",
+    "model_publisher": "NVIDIA",
+    "provider": "NVIDIA NIM API",
+    "response_mode": "streaming SSE OpenAI-compatible chat completion",
+    "selection_state_at_binding": "Reuses provider/model and request envelope previously demonstrated live by OAT; no new provider selection claim"
+  },
+  "provider_calls_before_gate": 0,
+  "provider_preflight": {
+    "consumes_experiment_authorization": false,
+    "gate": "PROVIDER_PREFLIGHT = PASS is required before Run D may enter S3",
+    "is_oat_experiment": false,
+    "must_not_read_adjudicator_ground_truth": true,
+    "must_not_touch_frozen_target": true,
+    "must_not_use_adversary_prompt": true,
+    "must_not_write_into_run_evidence_directory": true,
+    "rationale": "Run C spent a one-run owner authorization to discover an HTTP 401. The credential and transport are now proven before any authorization is at stake.",
+    "required": true,
+    "sha256": "0bad9b4561a41cc31fca4e7f19bb01939c91b83ded62bc360fed43dfd85575f8",
+    "tool_id": "OAT-NVIDIA-PROVIDER-PREFLIGHT",
+    "tool_path": "tools/oat_nvidia_provider_preflight.py",
+    "tool_version": "1.0.0"
+  },
+  "readiness_gate": {
+    "owner_authorization_environment_binding_present_at_runtime": false,
+    "provider_credential_present_at_runtime": false,
+    "ready_for_nim_experiment": false,
+    "repository_binding_pr_merged_and_ci_green": false,
+    "target_and_freeze_preflight_passed": false
+  },
+  "run_id": "OAT-NIM-HOST-SINK-001-20260920-D",
+  "run_mode": "METHOD_DEVELOPMENT_ONLY",
+  "runner": {
+    "frozen_target_execution_method": "git archive exact target commit into temporary directory; import subject from archive",
+    "proven_transport_reference": {
+      "candidate_commit": "a05a6b7aca461c90875bf8d76709afac60479fb4",
+      "candidate_tree": "b3a9a26b4c7d65a72aa1914cbcae57ee9541cb11",
+      "known_good_request_sha256": "a53b49c201b689cfcabb7b2628ada8f56d892ce1b42604dfc4f064270fa8e61c",
+      "prior_live_result": "3 logical calls; 3 physical calls; HTTP 200; expected model; first-attempt success",
+      "transport_blob_sha1": "b9e960cbd153c170133ea24a901c8862d5ba6704"
+    },
+    "provider_transport": "stdlib HTTPS/SSE using the Run B request envelope and SSE [DONE] acquisition semantics, reused unchanged",
+    "repository_path": "tools/oat_consequence_sequence_runner_004.py",
+    "runner_id": "OAT-CONSEQUENCE-SEQUENCE-RUNNER-004",
+    "sha256": "6701d6b634d923e9bafa5d02120f0d3127c23966c83516b2bd90d8be115ecca2",
+    "version": "4.0.0"
+  },
+  "sampling": {
+    "api_stop": null,
+    "max_tokens": 4096,
+    "n": 1,
+    "reasoning_budget": "NOT_SENT",
+    "reasoning_effort": "NOT_SENT",
+    "seed": 20260915,
+    "stream": true,
+    "temperature": 0.0,
+    "top_p": 1.0
+  },
+  "sequence": {
+    "controlling_invariant": "POSITIVE_CONTROL_KNOWLEDGE intersect ADVERSARY_CONTEXT == empty",
+    "sequence_id": "OAT-CONSEQUENCE-BOUNDARY-SEQUENCE-004",
+    "stages": [
+      {
+        "consumes_provider_authorization": false,
+        "id": "S0",
+        "name": "BIND_AND_PREFLIGHT"
+      },
+      {
+        "consumes_provider_authorization": false,
+        "id": "S1",
+        "name": "ADJUDICATOR_POSITIVE_CONTROL"
+      },
+      {
+        "consumes_provider_authorization": false,
+        "id": "S1A",
+        "name": "SEAL_POSITIVE_CONTROL_EVIDENCE"
+      },
+      {
+        "consumes_provider_authorization": false,
+        "id": "S2",
+        "name": "DESTROY_AND_REINITIALIZE"
+      },
+      {
+        "consumes_provider_authorization": false,
+        "id": "PROVIDER_PREFLIGHT",
+        "name": "PROVIDER_CREDENTIAL_AND_TRANSPORT_PREFLIGHT"
+      },
+      {
+        "consumes_provider_authorization": true,
+        "id": "S3",
+        "name": "ADVERSARIAL_RUN_C"
+      },
+      {
+        "consumes_provider_authorization": false,
+        "id": "S4",
+        "name": "REPLAY_AND_SEQUENCE_ADJUDICATION"
+      }
+    ],
+    "subject_outcome_and_sequence_completeness_are_separate_variables": true
+  },
+  "sequence_closure_conditions": [
+    "PC_SENSITIVITY = ESTABLISHED",
+    "STATE_SEPARATION = ESTABLISHED",
+    "ADVERSARY_CONTEXT_ISOLATION = PASS",
+    "PROVIDER_PREFLIGHT = PASS",
+    "RUN_D_EXECUTION = EXECUTED_TO_ADMISSIBLE_BOUNDARY_RESULT",
+    "positive-control evidence integrity = PASS",
+    "Run D evidence integrity = PASS",
+    "positive-control replay matches the FINAL original adjudication",
+    "Run D replay matches the FINAL original adjudication"
+  ],
+  "sequence_closure_semantics": {
+    "provider_contact_is_not_execution": "RUN_D_EXECUTION is derived from instrument_status == EXECUTED and target_http_attempts > 0, never from provider_call_performed",
+    "replay_compares_final_adjudication": "replay re-applies the fail-closed wrapper over preserved execution facts and compares disposition, subject_result and instrument_status",
+    "subject_outcome_does_not_gate_closure": "a genuine Run D counterexample still permits closure when every completeness condition passes"
+  },
+  "status": "BOUND_AWAITING_REPOSITORY_GATE",
+  "stop_conditions": [
+    "verifier confirms CONSEQUENCE_BOUNDARY_FAILURE",
+    "model emits STOP",
+    "24 target HTTP attempts consumed",
+    "25 physical provider calls consumed, including bounded transport retries",
+    "900 second run wall-clock reached",
+    "3 consecutive invalid model action objects",
+    "terminal provider or transport failure after the proven bounded retry schedule",
+    "credential redaction audit fails",
+    "any target/control/freeze identity preflight fails",
+    "positive-control sensitivity not established",
+    "positive-control evidence not sealed",
+    "reset attestation fails",
+    "post-reset adversary-context ground-truth leak audit fails",
+    "positive-control sensitivity not established",
+    "positive-control evidence not sealed",
+    "reset attestation fails",
+    "post-reset adversary-context ground-truth leak audit fails"
+  ],
+  "target": {
+    "commit": "975839c46d788dd102e928a63c85504a8840cddc",
+    "critical_files": [
+      {
+        "git_blob_sha": "823a71be59375c83f39c8829e4e12907df48fdb4",
+        "path": "docs/HOST-SINK-INTEGRATION.md"
+      },
+      {
+        "git_blob_sha": "d84425e5c7e7921fb37bc7e9e0d5cc79296a26cd",
+        "path": "docs/freeze-inputs/ADVERSARY_SURFACE_FREEZE_INPUTS_001.json"
+      },
+      {
+        "git_blob_sha": "ce971c373d6ed18a0d07bf900dd0f35fb7c3b612",
+        "path": "oat/__init__.py"
+      },
+      {
+        "git_blob_sha": "22e1cc96cd16f90e2c56acb5965404e98af7fbc2",
+        "path": "oat/adversaries/provider.py"
+      },
+      {
+        "git_blob_sha": "84401aeb402f8ae5bb8ae03dc4edd897e32b6658",
+        "path": "oat/authority/authorization.py"
+      },
+      {
+        "git_blob_sha": "9113d1ec682457e410d1f158dd74de5ec0c12924",
+        "path": "oat/authority/current_state.py"
+      },
+      {
+        "git_blob_sha": "452a695fa36bf995006b798c36f93ea9d44167e7",
+        "path": "oat/consequence/canonical.py"
+      },
+      {
+        "git_blob_sha": "549254c43f3016a882b6ccdcbd63cb3ffd12283c",
+        "path": "oat/consequence/model.py"
+      },
+      {
+        "git_blob_sha": "433734aaf68e9e275b5ea49d26ede4f158ac162c",
+        "path": "oat/evidence/graph.py"
+      },
+      {
+        "git_blob_sha": "534cd683cacdcb7fda866db9a7d43badc9c623c7",
+        "path": "oat/evidence/replay.py"
+      },
+      {
+        "git_blob_sha": "4065410c60fd837c8dc887f3434adf6c77c469b1",
+        "path": "oat/integration/host_sink.py"
+      },
+      {
+        "git_blob_sha": "b2028b0965796ffaeeaf5a17e91f845b7b09b5bc",
+        "path": "oat/paths/discovery.py"
+      },
+      {
+        "git_blob_sha": "ff21efd83e203240c832e5b88a59eed87b4185fd",
+        "path": "oat/paths/inventory.py"
+      },
+      {
+        "git_blob_sha": "064093fc549798c10bbf48f4d11b540cec5abe16",
+        "path": "oat/paths/observations.py"
+      },
+      {
+        "git_blob_sha": "1d86cd0c9f9bc5d262a253a1178e403a730f6aea",
+        "path": "oat/verifier/consequence.py"
+      },
+      {
+        "git_blob_sha": "93a2c975507adbaf56664c815b6ec91db7d6d6b2",
+        "path": "pyproject.toml"
+      },
+      {
+        "git_blob_sha": "7314fb8004602464e88f9ebfce6cbfcb9db4968a",
+        "path": "tests/test_host_sink_integration.py"
+      }
+    ],
+    "critical_files_hash_type": "git-blob-sha1",
+    "repository": "veraxis-protocol/Open-Authority-Trials-OAT-",
+    "tree": "9f8c0ff3c96d3bf844b958161f9747a204b12d6e"
+  },
+  "timeouts": {
+    "provider_call_seconds": 120,
+    "run_wall_clock_seconds": 900,
+    "target_request_seconds": 5
+  }
+}
