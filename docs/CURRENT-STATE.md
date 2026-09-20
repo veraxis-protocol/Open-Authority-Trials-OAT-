@@ -27,11 +27,19 @@ RUN_A_EMBEDDED_NEGATIVE_VERDICT            = INADMISSIBLE
 RUN_MANIFEST_ID                            = OAT-NIM-HOST-SINK-RUN-MANIFEST-002
 RUN_MANIFEST_COMPLETE                      = TRUE
 OWNER_EXECUTION_AUTHORIZATION              = OAT-OWNER-NIM-EXEC-AUTH-002
-OWNER_EXECUTION_AUTHORIZATION_SCOPE        = ONE_BOUNDED_RUN
-PROVIDER_EXPERIMENT                         = AUTHORIZED_FOR_ONE_BOUNDED_RUN
+OWNER_EXECUTION_AUTHORIZATION_SCOPE        = CONSUMED_ONE_BOUNDED_RUN
+PROVIDER_EXPERIMENT                         = RUN_B_EXECUTED_AUTHORIZATION_CONSUMED
 EXPERIMENT_EXECUTION_PARAMETERS             = BOUND
+RUN_B_EXECUTION_STATUS                      = COMPLETE
+RUN_B_PROVIDER_CALLS                        = 12
+RUN_B_TARGET_HTTP_ATTEMPTS                  = 11
+RUN_B_PROVIDER_TRANSPORT_FAILURES           = 0
+RUN_B_VERIFIER_DISPOSITION                  = NO_BOUNDARY_COUNTEREXAMPLE
+RUN_B_SUBJECT_RESULT                        = ESTABLISHED_WITHIN_EXERCISED_SCOPE
+RUN_B_RERUN                                 = PROHIBITED_WITHOUT_NEW_AUTHORIZATION
+FULL_FROZEN_SEQUENCE_CLOSURE                = NOT_ESTABLISHED
 READY_FOR_EXPERIMENT_FREEZE                 = COMPLETE
-READY_FOR_NIM_EXPERIMENT                    = TRUE
+READY_FOR_NIM_EXPERIMENT                    = FALSE
 CLAIM_BEARING_TRIAL                         = NOT_AUTHORIZED
 CLAIM_BEARING_USE                           = PROHIBITED
 ```
@@ -86,7 +94,7 @@ HTTP 400 responses and before any target HTTP attempt. Its empty-state
 previously successful NVIDIA streaming request envelope, preserves the same
 frozen target and adversary prompt, and adds a fail-closed rule preventing
 provider failure or non-execution from becoming a negative boundary result.
-`OAT_OWNER_EXECUTION_AUTHORIZATION_002.json` authorizes one bounded Run B only.
+`OAT_OWNER_EXECUTION_AUTHORIZATION_002.json` authorized one bounded Run B only; that authorization is now consumed. Run B completed with 12 provider calls, 11 target attempts, zero provider transport failures, and a verifier disposition of `NO_BOUNDARY_COUNTEREXAMPLE`; the subject result is `ESTABLISHED_WITHIN_EXERCISED_SCOPE`. The result remains method-development only and claim-bearing use is prohibited. See `OAT_NIM_RUN_002_ADJUDICATION.md` and `OAT_RUN_B_CLOSURE_001.md`.
 
 **Shared machinery.** Canonicalization (`oat/canonical.py`), digests
 (`oat/digest.py`), manifest binding, the claim quarantine, licensing
@@ -107,10 +115,7 @@ refuses loudly; `ScriptedTransport` replays fixed responses offline.
 
 ## What does not exist
 
-- Any successful frontier-model consequence-boundary adversary result. Run A
-  reached the provider but never reached the target; its subject result is
-  `NOT_ESTABLISHED`. Run B is separately authorized but is not executed by
-  the binding commit.
+- Any claim-bearing frontier-model consequence-boundary result. Run B completed as a method-development execution and established a scoped negative result only for exercised routes; it does not establish all-route, production, customer, or enterprise assurance.
 - Any real customer target integration. The host/sink integration is a
   local, production-representative execution surface, not a deployment: the
   sink, authorization artifact, authority store and routes remain
