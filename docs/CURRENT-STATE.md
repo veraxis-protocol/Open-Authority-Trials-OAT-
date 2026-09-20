@@ -13,12 +13,15 @@ this file is no longer true, the file is wrong and should be fixed.
 ## Doctrine
 
 ```text
-CONSEQUENCE_BOUNDARY_INSTRUMENT     = DETERMINISTIC_REFERENCE_IMPLEMENTATION
-REAL_TARGET_INTEGRATION             = NOT_ESTABLISHED
-REAL_ENTERPRISE_ALL_ROUTE_ASSURANCE = NOT_ESTABLISHED
-PROVIDER_EXPERIMENT                 = NOT_AUTHORIZED_BY_THIS_REFACTOR
-CLAIM_BEARING_TRIAL                 = NOT_AUTHORIZED
-CLAIM_BEARING_USE                   = PROHIBITED
+CONSEQUENCE_BOUNDARY_INSTRUMENT             = DETERMINISTIC_REFERENCE_IMPLEMENTATION
+PRODUCTION_REPRESENTATIVE_HOST_SINK_INTEGRATION = ESTABLISHED
+REAL_CUSTOMER_TARGET_INTEGRATION            = NOT_ESTABLISHED
+REAL_ENTERPRISE_ALL_ROUTE_ASSURANCE         = NOT_ESTABLISHED
+PROVIDER_EXPERIMENT                         = NOT_YET_AUTHORIZED
+READY_FOR_EXPERIMENT_FREEZE                 = TRUE
+READY_FOR_NIM_EXPERIMENT                    = FALSE
+CLAIM_BEARING_TRIAL                         = NOT_AUTHORIZED
+CLAIM_BEARING_USE                           = PROHIBITED
 ```
 
 ## What exists
@@ -41,6 +44,17 @@ testbed, preserved and still passing: `oat/reference_boundaries/rb001.py`,
 `oat/falsifiers/rb001.py`, `oat/verifier/v1.py`, `oat/pipeline.py`,
 `oat/replay.py`, `oat/trial.py`, `oat/witness.py`, `oat/manifest.py`.
 
+**Host/sink integration.** `oat/integration/host_sink.py` binds the
+consequence-boundary instrument to an actual local execution surface: a
+loopback HTTP host, a real queue/worker hop, a durable SQLite protected
+ledger, and a physically separate SQLite telemetry store. Two routes are
+declared (`route.http-guarded`, `route.queue-worker`) and one reachable
+route is deliberately undeclared (`route.hidden-batch`). Route identity is
+assigned by the host; a client-supplied `route_id` is ignored. This is
+local method-development infrastructure only: no external network, no real
+money, no customer system, no provider call. See
+`docs/HOST-SINK-INTEGRATION.md`.
+
 **Shared machinery.** Canonicalization (`oat/canonical.py`), digests
 (`oat/digest.py`), manifest binding, the claim quarantine, licensing
 enforcement, and the CLI.
@@ -62,8 +76,11 @@ refuses loudly; `ScriptedTransport` replays fixed responses offline.
 
 - Any frontier-model or provider adversary run. No provider call has been
   made from this repository, and none is authorized.
-- Any real target integration. The sink, authorization artifact, authority
-  store and routes are representative deterministic primitives.
+- Any real customer target integration. The host/sink integration is a
+  local, production-representative execution surface, not a deployment: the
+  sink, authorization artifact, authority store and routes remain
+  representative deterministic primitives. It is not customer validation and
+  not real enterprise assurance.
 - Any all-route assurance claim about any real system.
 - Any claim-bearing result, standing, or certification of anything.
 - Experiment 001 execution. It remains stopped and is not resumed here.

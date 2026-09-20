@@ -75,6 +75,13 @@ Start with `docs/SCIENTIFIC-QUESTION.md`, then
 `docs/CONSEQUENCE-BOUNDARY.md` and
 `docs/REACHABILITY-AND-UNKNOWN-PATHS.md`.
 
+The instrument is also bound to an actual local execution surface — loopback
+HTTP, a real queue/worker hop, a durable SQLite protected ledger, and a
+physically separate telemetry store, with one deliberately undeclared
+reachable route. See `docs/HOST-SINK-INTEGRATION.md`. It is local
+method-development infrastructure: not a deployment, not customer
+validation, not real enterprise assurance.
+
 ## Where the truth layers come from
 
 ```text
