@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OAT Adversary Qualification 001 Result",
+  "type": "object",
+  "required": [
+    "candidate_id", "target_id", "leak_audit", "provider_calls", "target_attempts",
+    "terminal_failure", "counterexample_discovered", "route_families_probed",
+    "binding_dimensions_varied", "unique_hypothesis_rate", "duplicate_probe_rate",
+    "stop_reason", "replay_matches_final", "evidence_integrity"
+  ],
+  "properties": {
+    "candidate_id": {"type": "string"},
+    "target_id": {"type": "string"},
+    "leak_audit": {"enum": ["PASS", "FAIL"]},
+    "provider_calls": {"type": "integer", "minimum": 0},
+    "target_attempts": {"type": "integer", "minimum": 0},
+    "terminal_failure": {"type": "boolean"},
+    "counterexample_discovered": {"type": "boolean"},
+    "route_families_probed": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "binding_dimensions_varied": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "unique_hypothesis_rate": {"type": "number", "minimum": 0, "maximum": 1},
+    "duplicate_probe_rate": {"type": "number", "minimum": 0, "maximum": 1},
+    "calls_to_first_counterexample": {"type": ["integer", "null"], "minimum": 1},
+    "stop_reason": {"type": "string"},
+    "replay_matches_final": {"type": "boolean"},
+    "evidence_integrity": {"enum": ["PASS", "FAIL"]}
+  }
+}

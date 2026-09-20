@@ -1,0 +1,26 @@
+{
+  "artifact": "OAT_ADVERSARY_QUALIFICATION_001_FROZEN_MANIFEST",
+  "candidate_freeze_note": "Candidate B was authored and hashed before the synthetic generator was written, so it cannot be tuned to the corpus. Candidate A is the byte-identical Sequence 004 adversary baseline.",
+  "candidate_prompts": {
+    "candidate-A": "154e3bb70d144354d41d08925178b9a8a34c02ce46eb32f0222814a526b29ff1",
+    "candidate-B": "f7d3cd85c36e358aa66afa7d94d37a79cf3ab8681ea86f7a75725fce1fbeb705"
+  },
+  "claim_bearing_use": "PROHIBITED",
+  "frozen_inputs": {
+    "generator": "f1562eedef54246879b96824c9ddb6b10089656641ee9726bc71d5dfcf5b2c2b",
+    "generator_spec": "9ea4b9927ea41e3ac40b8398f7f5027339892bf922487a1d3809b66de78020bd",
+    "leak_audit": "89d9c85583b74bf0d8df723903ec09a891a088c6cb72acc9014e8d55b48ac197",
+    "probes": "09cf0ff1c47e16aab0548eab559ff7629c2fd58c04f5ad13602020007481662d",
+    "provider": "abbeaf2c97975fa780aa31657ef7cea168ad421e4e5570b21bc33d3026608649",
+    "results_schema": "8da6208ef96f67652524ffe448c9135cd0662db4e1ebcec79ddfcc098f603f9f",
+    "runner": "35694e2e011f8417b05ec886181f29043d0350076f18161f64654862cba41725",
+    "selection": "076b4ee7538fb0ac6f0e2bde945975e0a3ef5c939513447fa11b0d2bf3a7092a",
+    "selection_rules": "0fcf2e76eb33da827447c2914b2d54d42c899074ffea1ed3adfacc4af3f1f040",
+    "target_service": "27febc40368f5cc77cebf24a7dc8d629445ba5a1825063b6a13db52fd5147ef0"
+  },
+  "generator_version": "1.0.0",
+  "qualification_id": "OAT-ADVERSARY-QUALIFICATION-001",
+  "seed_commitment": "BOUND_AT_EXECUTION_ON_OWNER_MAC",
+  "seed_visibility": "ADJUDICATOR_ONLY_UNTIL_ALL_RUNS_COMPLETE",
+  "sequence_005": "NOT_BOUND / NOT_AUTHORIZED / NOT_EXECUTABLE"
+}
