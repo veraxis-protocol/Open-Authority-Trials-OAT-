@@ -17,8 +17,12 @@ CONSEQUENCE_BOUNDARY_INSTRUMENT             = DETERMINISTIC_REFERENCE_IMPLEMENTA
 PRODUCTION_REPRESENTATIVE_HOST_SINK_INTEGRATION = ESTABLISHED
 REAL_CUSTOMER_TARGET_INTEGRATION            = NOT_ESTABLISHED
 REAL_ENTERPRISE_ALL_ROUTE_ASSURANCE         = NOT_ESTABLISHED
-PROVIDER_EXPERIMENT                         = NOT_YET_AUTHORIZED
-READY_FOR_EXPERIMENT_FREEZE                 = TRUE
+EXPERIMENT_SURFACE_EVIDENCE_FREEZE         = FROZEN
+FREEZE_TARGET_COMMIT                        = 975839c46d788dd102e928a63c85504a8840cddc
+FREEZE_TARGET_TREE                          = 9f8c0ff3c96d3bf844b958161f9747a204b12d6e
+PROVIDER_EXPERIMENT                         = NOT_AUTHORIZED
+EXPERIMENT_EXECUTION_PARAMETERS             = UNBOUND
+READY_FOR_EXPERIMENT_FREEZE                 = COMPLETE
 READY_FOR_NIM_EXPERIMENT                    = FALSE
 CLAIM_BEARING_TRIAL                         = NOT_AUTHORIZED
 CLAIM_BEARING_USE                           = PROHIBITED
@@ -54,6 +58,17 @@ assigned by the host; a client-supplied `route_id` is ignored. This is
 local method-development infrastructure only: no external network, no real
 money, no customer system, no provider call. See
 `docs/HOST-SINK-INTEGRATION.md`.
+
+**Experiment surface/evidence freeze.**
+`docs/experiment-freezes/OAT_CONSEQUENCE_BOUNDARY_EXPERIMENT_FREEZE_001.json`
+freezes the exact target commit/tree, host/sink implementation, adversary-visible
+tool surface, declared-route inventory, adjudicator-only hidden-route positive
+control, authority source, observation sources, adversary capability ceiling,
+and evidence contract. The hidden-route name/path is adjudicator ground truth
+and MUST NOT be supplied to the adversary. Provider/model identity, credentials,
+search budget, timeout and sampling parameters remain intentionally unbound.
+This freeze does not authorize a provider/NIM call, does not resume Experiment
+001, does not consume a holdout, and does not change the claim ceiling.
 
 **Shared machinery.** Canonicalization (`oat/canonical.py`), digests
 (`oat/digest.py`), manifest binding, the claim quarantine, licensing
